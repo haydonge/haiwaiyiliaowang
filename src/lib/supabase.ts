@@ -1,9 +1,26 @@
 import { createClient } from '@supabase/supabase-js'
 
-// 检测是否在Vercel生产环境
+// 检测运行环境
 const isVercelProduction = typeof window !== 'undefined' && 
   (window.location.hostname.includes('vercel.app') || 
    window.location.hostname.includes('vercel.com'));
+
+// 检测是否在DOKPLOY环境（通过域名特征识别）
+const isDokployEnvironment = typeof window !== 'undefined' && 
+  window.location.hostname.includes('traefik.me');
+
+// 检测是否为本地开发环境
+const isLocalDevelopment = typeof window !== 'undefined' && 
+  (window.location.hostname === 'localhost' || 
+   window.location.hostname === '127.0.0.1' || 
+   window.location.hostname.startsWith('192.168.'));
+
+console.log('🌍 环境检测:', {
+  isVercelProduction,
+  isDokployEnvironment,
+  isLocalDevelopment,
+  hostname: typeof window !== 'undefined' ? window.location.hostname : 'server-side'
+});
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
@@ -198,12 +215,20 @@ class SupabaseQueryBuilder {
 
 // 创建客户端
 function createSupabaseClient() {
+  // 只有在Vercel生产环境才使用代理
   if (isVercelProduction) {
     console.log('🔄 使用Supabase代理客户端（Vercel生产环境）');
     return new SupabaseProxy() as any;
   }
   
-  console.log('🔗 使用Supabase直接连接（本地开发环境）');
+  // DOKPLOY环境和本地开发环境都使用直接连接
+  if (isDokployEnvironment) {
+    console.log('🐳 使用Supabase直接连接（DOKPLOY环境）');
+    console.log('📍 Supabase URL:', supabaseUrl);
+  } else {
+    console.log('🔗 使用Supabase直接连接（本地开发环境）');
+  }
+  
   return createClient(supabaseUrl, supabaseAnonKey);
 }
 

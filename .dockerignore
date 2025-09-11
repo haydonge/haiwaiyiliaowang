@@ -1,0 +1,114 @@
+# Dependencies
+node_modules
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Build outputs (will be created during build)
+dist
+build
+.vite
+
+# Environment and config files
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+*.key
+*.pem
+*.p12
+*.pfx
+
+# Version control
+.git
+.gitignore
+
+# IDE and editor files
+.vscode
+.idea
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Test files and debugging
+test-*.cjs
+test-*.js
+test-*.html
+vercel-debug.html
+
+# Documentation and guides
+*_GUIDE.md
+*_SETUP.md
+*_ANALYSIS.md
+SUPABASE_*.md
+VERCEL_*.md
+DOKPLOY_*.md
+README.md
+
+# Database and SQL files
+*.db
+*.sqlite
+*.sqlite3
+add_*.sql
+execute-sql.*
+fix-*.cjs
+diagnose-*.cjs
+
+# Deployment specific
+.vercel
+.supabase
+
+# Logs
+logs
+*.log
+
+# Temporary files
+*.tmp
+*.temp
+
+# OS generated files
+ehthumbs.db
+
+# Coverage directory used by tools like istanbul
+coverage
+*.lcov
+
+# nyc test coverage
+.nyc_output
+
+# ESLint cache
+.eslintcache
+
+# Optional npm cache directory
+.npm
+
+# Optional REPL history
+.node_repl_history
+
+# Output of 'npm pack'
+*.tgz
+
+# Yarn Integrity file
+.yarn-integrity
+
+# parcel-bundler cache (https://parceljs.org/)
+.cache
+.parcel-cache
+
+# Next.js build output
+.next
+
+# Nuxt.js build / generate output
+.nuxt
+
+# Storybook build outputs
+.out
+.storybook-out
+
+# Temporary folders
+tmp/
+temp/
