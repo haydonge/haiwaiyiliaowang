@@ -47,9 +47,16 @@ export default function Blog() {
       setError(null);
       const data = await getPublishedPosts(selectedCategory === 'all' ? undefined : selectedCategory, 20);
       setPosts(data);
-    } catch (err) {
-      console.error('Failed to load posts:', err);
-      setError('加载文章失败，请稍后重试');
+    } catch (err: any) {
+      console.error('Failed to load posts:', {
+        message: err?.message || 'Unknown error',
+        details: err?.details,
+        hint: err?.hint,
+        code: err?.code,
+        stack: err?.stack,
+        fullError: err
+      });
+      setError(`加载文章失败: ${err?.message || '未知错误'}`);
     } finally {
       setLoading(false);
     }
@@ -62,9 +69,16 @@ export default function Blog() {
       const data = await searchPosts(searchTerm, currentLanguage);
       const filteredData = selectedCategory === 'all' ? data : data.filter(post => post.category === selectedCategory);
       setPosts(filteredData);
-    } catch (err) {
-      console.error('Search failed:', err);
-      setError('搜索失败，请稍后重试');
+    } catch (err: any) {
+      console.error('Search failed:', {
+        message: err?.message || 'Unknown error',
+        details: err?.details,
+        hint: err?.hint,
+        code: err?.code,
+        stack: err?.stack,
+        fullError: err
+      });
+      setError(`搜索失败: ${err?.message || '未知错误'}`);
     } finally {
       setLoading(false);
     }

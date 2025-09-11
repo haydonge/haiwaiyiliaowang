@@ -66,7 +66,13 @@ export async function getPublishedPosts(category?: string, limit = 10) {
   const { data, error } = await query
   
   if (error) {
-    console.error('Error fetching posts:', error)
+    console.error('Error fetching posts:', {
+      message: error.message,
+      details: error.details,
+      hint: error.hint,
+      code: error.code,
+      fullError: error
+    })
     throw error
   }
   
@@ -84,7 +90,13 @@ export async function getAllPosts() {
     .order('created_at', { ascending: false })
 
   if (error) {
-    console.error('Error fetching all posts:', error)
+    console.error('Error fetching all posts:', {
+      message: error.message,
+      details: error.details,
+      hint: error.hint,
+      code: error.code,
+      fullError: error
+    })
     throw error
   }
 
@@ -300,7 +312,13 @@ export async function searchPosts(searchTerm: string, language: 'zh' | 'en' = 'z
     .order('created_at', { ascending: false })
 
   if (error) {
-    console.error('Error searching posts:', error)
+    console.error('Error searching posts:', {
+      message: error.message,
+      details: error.details,
+      hint: error.hint,
+      code: error.code,
+      fullError: error
+    })
     throw error
   }
 

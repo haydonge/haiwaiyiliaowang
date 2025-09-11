@@ -13,6 +13,7 @@ import BlogPost from "@/pages/BlogPost";
 import BlogAdmin from "@/pages/BlogAdmin";
 import BlogTest from "@/pages/BlogTest";
 import Debug from "@/pages/Debug";
+import DokployDebug from "@/pages/DokployDebug";
 
 // 布局组件
 import Layout from "@/components/Layout";
@@ -40,6 +41,7 @@ export default function App() {
             <Route path="/admin/blog" element={<BlogAdmin />} />
             <Route path="/blog-test" element={<BlogTest />} />
             <Route path="/debug" element={<Debug />} />
+            <Route path="/dokploy-debug" element={<DokployDebug />} />
             <Route path="*" element={<div className="text-center text-xl py-20">页面未找到 / Page Not Found</div>} />
           </Routes>
         </Layout>
