@@ -1,65 +1,107 @@
-import { createClient } from '@supabase/supabase-js'
-import { DokploySupabaseProxy } from './dokploy-proxy'
+// DOKPLOY环境专用代理客户端 - 解决HTTPS混合内容问题
 
-// 检测运行环境
-const isVercelProduction = typeof window !== 'undefined' && 
-  (window.location.hostname.includes('vercel.app') || 
-   window.location.hostname.includes('vercel.com'));
-
-// 检测是否在DOKPLOY环境（通过域名特征识别）
-const isDokployEnvironment = typeof window !== 'undefined' && 
-  window.location.hostname.includes('traefik.me');
-
-// 检测是否为本地开发环境
-const isLocalDevelopment = typeof window !== 'undefined' && 
-  (window.location.hostname === 'localhost' || 
-   window.location.hostname === '127.0.0.1' || 
-   window.location.hostname.startsWith('192.168.'));
-
-console.log('🌍 环境检测:', {
-  isVercelProduction,
-  isDokployEnvironment,
-  isLocalDevelopment,
-  hostname: typeof window !== 'undefined' ? window.location.hostname : 'server-side'
-});
-
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
-
-if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error('Missing Supabase environment variables')
-}
-
-// 代理客户端类
-class SupabaseProxy {
-  private baseUrl = '/api/supabase-proxy';
+// DOKPLOY代理客户端类
+class DokploySupabaseProxy {
+  private supabaseUrl: string;
+  private anonKey: string;
+  
+  constructor(supabaseUrl: string, anonKey: string) {
+    this.supabaseUrl = supabaseUrl;
+    this.anonKey = anonKey;
+  }
   
   private async request(path: string, options: RequestInit = {}) {
-    const url = `${this.baseUrl}?path=${encodeURIComponent(path)}`;
+    // DOKPLOY环境混合内容解决方案
+    // 1. 首先尝试使用内置代理（如果可用）
+    // 2. 如果代理不可用，尝试HTTPS直连
+    // 3. 最后回退到HTTP（仅在开发环境）
     
-    const response = await fetch(url, {
+    const isHttpsPage = typeof window !== 'undefined' && window.location.protocol === 'https:';
+    
+    // 方案1: 尝试使用前端代理
+    if (isHttpsPage) {
+      try {
+        console.log('🔄 尝试使用前端代理解决混合内容问题');
+        const proxyUrl = `/api/supabase-proxy?path=${encodeURIComponent(path)}`;
+        
+        const response = await fetch(proxyUrl, {
+          ...options,
+          headers: {
+            'Content-Type': 'application/json',
+            ...options.headers,
+          },
+        });
+        
+        if (response.ok) {
+          console.log('✅ 前端代理请求成功');
+          return response.json();
+        } else {
+          console.log('⚠️ 前端代理不可用，尝试其他方案');
+        }
+      } catch (error) {
+        console.log('⚠️ 前端代理失败，尝试直连:', error.message);
+      }
+    }
+    
+    // 方案2: 尝试HTTPS直连
+    if (isHttpsPage) {
+      try {
+        const httpsUrl = `${this.supabaseUrl.replace('http://', 'https://')}/rest/v1/${path}`;
+        console.log('🔒 尝试HTTPS直连:', httpsUrl);
+        
+        const response = await fetch(httpsUrl, {
+          ...options,
+          headers: {
+            'Content-Type': 'application/json',
+            'apikey': this.anonKey,
+            'Authorization': `Bearer ${this.anonKey}`,
+            ...options.headers,
+          },
+        });
+        
+        if (response.ok) {
+          console.log('✅ HTTPS直连成功');
+          return response.json();
+        } else {
+          console.log('⚠️ HTTPS直连失败，状态码:', response.status);
+        }
+      } catch (error) {
+        console.log('⚠️ HTTPS直连异常:', error.message);
+      }
+    }
+    
+    // 方案3: HTTP直连（仅在非HTTPS页面或开发环境）
+    const httpUrl = `${this.supabaseUrl}/rest/v1/${path}`;
+    console.log('🌐 使用HTTP直连:', httpUrl);
+    
+    const response = await fetch(httpUrl, {
       ...options,
       headers: {
         'Content-Type': 'application/json',
+        'apikey': this.anonKey,
+        'Authorization': `Bearer ${this.anonKey}`,
         ...options.headers,
       },
     });
     
     if (!response.ok) {
-      const error = await response.json().catch(() => ({ error: 'Unknown error' }));
-      throw new Error(error.error || `HTTP ${response.status}`);
+      const error = await response.json().catch(() => ({ 
+        error: `HTTP ${response.status}: ${response.statusText}`,
+        details: '请检查Supabase服务状态和网络连接'
+      }));
+      throw new Error(error.error || error.message || `HTTP ${response.status}`);
     }
     
     return response.json();
   }
   
   from(table: string) {
-    return new SupabaseQueryBuilder(table, this.request.bind(this));
+    return new DokployQueryBuilder(table, this.request.bind(this));
   }
 }
 
-// 查询构建器类
-class SupabaseQueryBuilder {
+// DOKPLOY查询构建器类
+class DokployQueryBuilder {
   private table: string;
   private request: (path: string, options?: RequestInit) => Promise<any>;
   private selectColumns = '*';
@@ -214,51 +256,4 @@ class SupabaseQueryBuilder {
   }
 }
 
-// 创建客户端
-function createSupabaseClient() {
-  // Vercel和DOKPLOY生产环境都使用代理（解决HTTPS混合内容问题）
-  if (isVercelProduction) {
-    console.log('🔄 使用Supabase代理客户端（Vercel生产环境）');
-    return new SupabaseProxy() as any;
-  }
-  
-  if (isDokployEnvironment) {
-    console.log('🐳 使用DOKPLOY专用代理客户端（解决HTTPS混合内容问题）');
-    console.log('📍 原始Supabase URL:', supabaseUrl);
-    console.log('🔄 尝试HTTPS连接以解决混合内容问题');
-    return new DokploySupabaseProxy(supabaseUrl, supabaseAnonKey) as any;
-  }
-  
-  // 只有本地开发环境使用直接连接
-  console.log('🔗 使用Supabase直接连接（本地开发环境）');
-  console.log('📍 Supabase URL:', supabaseUrl);
-  
-  return createClient(supabaseUrl, supabaseAnonKey);
-}
-
-export const supabase = createSupabaseClient();
-
-// 数据库类型定义
-export interface BlogPost {
-  id: string
-  title_zh: string
-  title_en: string
-  content_zh: string
-  content_en: string
-  excerpt_zh?: string
-  excerpt_en?: string
-  slug: string
-  category: string
-  featured_image?: string
-  read_time: number
-  published: boolean
-  created_at: string
-  updated_at: string
-  author_id?: string
-  blog_authors?: {
-    name: string
-    bio_zh?: string
-    bio_en?: string
-    avatar_url?: string
-  }
-}
+export { DokploySupabaseProxy };
