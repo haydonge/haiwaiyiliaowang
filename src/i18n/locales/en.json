@@ -1,0 +1,205 @@
+{
+  "nav": {
+    "home": "Home",
+    "services": "Services",
+    "pricing": "Pricing",
+    "process": "Process",
+    "contact": "Contact",
+    "blog": "Blog"
+  },
+  "common": {
+    "learnMore": "Learn More",
+    "contactUs": "Contact Us",
+    "getStarted": "Get Started",
+    "readMore": "Read More",
+    "submit": "Submit",
+    "loading": "Loading...",
+    "success": "Success",
+    "error": "Error",
+    "phone": "Phone",
+    "email": "Email",
+    "address": "Address",
+    "name": "Name",
+    "message": "Message"
+  },
+  "home": {
+    "hero": {
+      "title": "Professional Overseas Fertility Services",
+      "subtitle": "Safe, professional, and caring overseas medical services to help you achieve your fertility dreams",
+      "cta": "Free Consultation"
+    },
+    "services": {
+      "title": "Core Services",
+      "subtitle": "We provide comprehensive overseas fertility medical services",
+      "ivf": {
+        "title": "IVF Treatment",
+        "description": "Advanced IVF technology with higher success rates"
+      },
+      "consultation": {
+        "title": "Professional Consultation",
+        "description": "One-on-one professional medical consultation services"
+      },
+      "support": {
+        "title": "Full Support",
+        "description": "Comprehensive care from consultation to treatment"
+      }
+    },
+    "stats": {
+      "title": "Success Statistics",
+      "successRate": "Success Rate",
+      "clients": "Clients Served",
+      "experience": "Years Experience",
+      "hospitals": "Partner Hospitals"
+    },
+    "testimonials": {
+      "title": "Client Testimonials",
+      "subtitle": "Hear from our satisfied clients"
+    }
+  },
+  "services": {
+    "title": "Our Services",
+    "subtitle": "Professional overseas fertility medical services",
+    "ivf": {
+      "title": "IVF Services",
+      "description": "Using the most advanced IVF technology to provide professional medical services for infertile couples. We partner with top reproductive medical centers overseas to ensure the highest success rates and safety."
+    },
+    "team": {
+      "title": "Professional Medical Team",
+      "subtitle": "Experienced international medical experts"
+    },
+    "hospitals": {
+      "title": "Partner Hospitals",
+      "subtitle": "Partnerships with top medical institutions worldwide"
+    }
+  },
+  "pricing": {
+    "title": "Pricing Plans",
+    "subtitle": "Transparent pricing, professional services",
+    "basic": {
+      "title": "Basic Package",
+      "price": "$12,800",
+      "features": [
+        "Basic medical examination",
+        "Professional consultation",
+        "Basic treatment plan",
+        "24/7 customer support"
+      ]
+    },
+    "premium": {
+      "title": "Premium Package",
+      "price": "$18,600",
+      "features": [
+        "Comprehensive medical examination",
+        "One-on-one expert consultation",
+        "Personalized treatment plan",
+        "Full escort service",
+        "Post-treatment recovery guidance"
+      ],
+      "popular": "Most Popular"
+    },
+    "vip": {
+      "title": "VIP Package",
+      "price": "$27,300",
+      "features": [
+        "Premium medical resources",
+        "Expert team service",
+        "Customized treatment plan",
+        "Luxury accommodation",
+        "Private transportation",
+        "Lifetime health management"
+      ]
+    }
+  },
+  "process": {
+    "title": "Service Process",
+    "subtitle": "Simple and clear service process for your peace of mind",
+    "steps": {
+      "consultation": {
+        "title": "Initial Consultation",
+        "description": "Professional medical consultants provide detailed consultation to understand your needs and health condition"
+      },
+      "evaluation": {
+        "title": "Medical Evaluation",
+        "description": "Arrange comprehensive medical examinations and develop personalized treatment plans"
+      },
+      "planning": {
+        "title": "Plan Development",
+        "description": "Based on evaluation results, develop detailed treatment plans and schedules"
+      },
+      "treatment": {
+        "title": "Overseas Treatment",
+        "description": "Travel to overseas hospitals for professional treatment with full professional team support"
+      },
+      "followup": {
+        "title": "Follow-up Care",
+        "description": "Post-treatment recovery guidance and long-term health management services"
+      }
+    },
+    "preparation": {
+      "title": "Preparation Requirements",
+      "documents": {
+        "title": "Required Documents",
+        "items": [
+          "Valid passport",
+          "Medical examination reports",
+          "Marriage certificate",
+          "Financial proof"
+        ]
+      },
+      "medical": {
+        "title": "Medical Preparation",
+        "items": [
+          "Complete basic health check",
+          "Stop smoking and drinking",
+          "Adjust sleep schedule",
+          "Maintain positive mindset"
+        ]
+      }
+    }
+  },
+  "contact": {
+    "title": "Contact Us",
+    "subtitle": "We are always here to provide professional consultation services",
+    "info": {
+      "phone": "+1 (555) 123-4567",
+      "email": "info@medical-fertility.com",
+      "address": "123 Medical Center Drive, New York, NY 10001",
+      "hours": "Monday - Sunday 9:00 AM - 6:00 PM"
+    },
+    "form": {
+      "title": "Online Consultation",
+      "name": "Your Name",
+      "email": "Email Address",
+      "phone": "Phone Number",
+      "message": "Your Message",
+      "submit": "Submit Inquiry",
+      "success": "Inquiry submitted successfully! We will contact you soon.",
+      "error": "Submission failed, please try again later"
+    }
+  },
+  "blog": {
+    "title": "Medical Blog",
+    "subtitle": "Latest medical knowledge and industry insights",
+    "categories": {
+      "all": "All",
+      "medical": "Medical Knowledge",
+      "success": "Success Stories",
+      "news": "Industry News",
+      "faq": "FAQ"
+    },
+    "readTime": "Read time",
+    "minutes": "minutes",
+    "relatedPosts": "Related Posts",
+    "backToList": "Back to List"
+  },
+  "footer": {
+    "company": "Overseas Medical Services Ltd.",
+    "description": "Professional overseas fertility medical service provider",
+    "quickLinks": "Quick Links",
+    "services": "Services",
+    "contact": "Contact Info",
+    "copyright": "All rights reserved",
+    "privacy": "Privacy Policy",
+    "terms": "Terms of Service"
+  }
+}

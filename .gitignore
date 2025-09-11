@@ -1,0 +1,80 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Dependencies
+node_modules
+
+# Build outputs
+dist
+dist-ssr
+build
+*.local
+
+# Environment variables and sensitive files
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+*.key
+*.pem
+*.p12
+*.pfx
+
+# Database and test files
+*.db
+*.sqlite
+*.sqlite3
+test-*.cjs
+test-*.js
+test-*.html
+vercel-debug.html
+
+# Documentation and guides (optional)
+*_GUIDE.md
+*_SETUP.md
+*_ANALYSIS.md
+SUPABASE_*.md
+VERCEL_*.md
+DOKPLOY_*.md
+
+# SQL files (keep migrations)
+add_*.sql
+execute-sql.*
+fix-*.cjs
+diagnose-*.cjs
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+.vite
+
+# OS generated files
+Thumbs.db
+ehthumbs.db
+
+# Vercel
+.vercel
+
+# Supabase
+.supabase
+
+# Temporary files
+*.tmp
+*.temp
+*.swp
+*.swo
+*~

@@ -1,0 +1,205 @@
+{
+  "nav": {
+    "home": "首页",
+    "services": "服务介绍",
+    "pricing": "价格方案",
+    "process": "流程说明",
+    "contact": "联系我们",
+    "blog": "医疗资讯"
+  },
+  "common": {
+    "learnMore": "了解更多",
+    "contactUs": "联系我们",
+    "getStarted": "开始咨询",
+    "readMore": "阅读更多",
+    "submit": "提交",
+    "loading": "加载中...",
+    "success": "成功",
+    "error": "错误",
+    "phone": "电话",
+    "email": "邮箱",
+    "address": "地址",
+    "name": "姓名",
+    "message": "留言内容"
+  },
+  "home": {
+    "hero": {
+      "title": "专业海外辅助生殖服务",
+      "subtitle": "为您提供安全、专业、贴心的海外医疗服务，助您实现生育梦想",
+      "cta": "免费咨询"
+    },
+    "services": {
+      "title": "核心服务",
+      "subtitle": "我们提供全方位的海外辅助生殖医疗服务",
+      "ivf": {
+        "title": "试管婴儿",
+        "description": "先进的IVF技术，提高成功率"
+      },
+      "consultation": {
+        "title": "专业咨询",
+        "description": "一对一专业医疗咨询服务"
+      },
+      "support": {
+        "title": "全程陪护",
+        "description": "从咨询到治疗的全程贴心服务"
+      }
+    },
+    "stats": {
+      "title": "成功数据",
+      "successRate": "成功率",
+      "clients": "服务客户",
+      "experience": "服务经验",
+      "hospitals": "合作医院"
+    },
+    "testimonials": {
+      "title": "客户评价",
+      "subtitle": "听听我们客户的真实反馈"
+    }
+  },
+  "services": {
+    "title": "服务介绍",
+    "subtitle": "专业的海外辅助生殖医疗服务",
+    "ivf": {
+      "title": "试管婴儿服务",
+      "description": "采用最先进的试管婴儿技术，为不孕不育夫妇提供专业的医疗服务。我们与海外顶级生殖医学中心合作，确保最高的成功率和安全性。"
+    },
+    "team": {
+      "title": "专业医疗团队",
+      "subtitle": "经验丰富的国际医疗专家团队"
+    },
+    "hospitals": {
+      "title": "合作医院",
+      "subtitle": "与全球顶级医疗机构建立合作关系"
+    }
+  },
+  "pricing": {
+    "title": "价格方案",
+    "subtitle": "透明的价格，专业的服务",
+    "basic": {
+      "title": "基础套餐",
+      "price": "¥88,000",
+      "features": [
+        "基础医疗检查",
+        "专业咨询服务",
+        "基础治疗方案",
+        "24小时客服支持"
+      ]
+    },
+    "premium": {
+      "title": "高级套餐",
+      "price": "¥128,000",
+      "features": [
+        "全面医疗检查",
+        "一对一专家咨询",
+        "个性化治疗方案",
+        "全程陪护服务",
+        "术后康复指导"
+      ],
+      "popular": "推荐"
+    },
+    "vip": {
+      "title": "VIP套餐",
+      "price": "¥188,000",
+      "features": [
+        "顶级医疗资源",
+        "专家团队服务",
+        "定制化治疗方案",
+        "豪华住宿安排",
+        "专车接送服务",
+        "终身健康管理"
+      ]
+    }
+  },
+  "process": {
+    "title": "服务流程",
+    "subtitle": "简单明了的服务流程，让您安心无忧",
+    "steps": {
+      "consultation": {
+        "title": "初步咨询",
+        "description": "专业医疗顾问为您提供详细咨询，了解您的需求和身体状况"
+      },
+      "evaluation": {
+        "title": "医疗评估",
+        "description": "安排全面的医疗检查，制定个性化的治疗方案"
+      },
+      "planning": {
+        "title": "方案制定",
+        "description": "根据评估结果，制定详细的治疗计划和时间安排"
+      },
+      "treatment": {
+        "title": "海外治疗",
+        "description": "前往海外医院接受专业治疗，全程有专业团队陪护"
+      },
+      "followup": {
+        "title": "后续跟进",
+        "description": "治疗完成后的康复指导和长期健康管理服务"
+      }
+    },
+    "preparation": {
+      "title": "准备事项",
+      "documents": {
+        "title": "所需文件",
+        "items": [
+          "有效护照",
+          "医疗检查报告",
+          "结婚证明",
+          "财务证明"
+        ]
+      },
+      "medical": {
+        "title": "医疗准备",
+        "items": [
+          "完成基础体检",
+          "停止吸烟饮酒",
+          "调整作息时间",
+          "保持良好心态"
+        ]
+      }
+    }
+  },
+  "contact": {
+    "title": "联系我们",
+    "subtitle": "我们随时为您提供专业的咨询服务",
+    "info": {
+      "phone": "+86 400-123-4567",
+      "email": "info@medical-fertility.com",
+      "address": "北京市朝阳区建国门外大街1号",
+      "hours": "周一至周日 9:00-18:00"
+    },
+    "form": {
+      "title": "在线咨询",
+      "name": "您的姓名",
+      "email": "邮箱地址",
+      "phone": "联系电话",
+      "message": "咨询内容",
+      "submit": "提交咨询",
+      "success": "咨询提交成功，我们会尽快与您联系！",
+      "error": "提交失败，请稍后重试"
+    }
+  },
+  "blog": {
+    "title": "医疗资讯",
+    "subtitle": "最新的医疗知识和行业资讯",
+    "categories": {
+      "all": "全部",
+      "medical": "医疗知识",
+      "success": "成功案例",
+      "news": "行业资讯",
+      "faq": "常见问题"
+    },
+    "readTime": "阅读时间",
+    "minutes": "分钟",
+    "relatedPosts": "相关文章",
+    "backToList": "返回列表"
+  },
+  "footer": {
+    "company": "海外医疗服务有限公司",
+    "description": "专业的海外辅助生殖医疗服务提供商",
+    "quickLinks": "快速链接",
+    "services": "服务项目",
+    "contact": "联系信息",
+    "copyright": "版权所有",
+    "privacy": "隐私政策",
+    "terms": "服务条款"
+  }
+}
