@@ -17,7 +17,7 @@
     "test:dokploy": "node test-dokploy-api.cjs",
     "test:local": "node test-dokploy-api.cjs http://localhost:3000",
     "migrate:postgresql": "node run-postgresql-migration.cjs"
-  }
+  },
   "dependencies": {
     "@supabase/supabase-js": "^2.57.4",
     "clsx": "^2.1.1",
