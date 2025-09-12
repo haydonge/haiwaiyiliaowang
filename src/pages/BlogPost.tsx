@@ -2,8 +2,7 @@ import { useParams, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useState, useEffect } from 'react';
 import { Calendar, Clock, Tag, ArrowLeft, Share2, Heart } from 'lucide-react';
-import { getPostBySlug } from '../services/blogService';
-import { BlogPost as BlogPostType } from '../lib/postgresql';
+import { getBlogPost, BlogPost as BlogPostType } from '../services/blogService';
 
 // BlogPost interface is now imported from supabase types
 
@@ -30,7 +29,7 @@ export default function BlogPost() {
     try {
       setLoading(true);
       setError(null);
-      const data = await getPostBySlug(slug);
+      const data = await getBlogPost(slug);
       setPost(data);
     } catch (err) {
       console.error('Failed to load post:', err);
@@ -41,19 +40,19 @@ export default function BlogPost() {
   };
   
   const getPostTitle = (post: BlogPostType) => {
-    return currentLanguage === 'zh' ? post.title_zh : post.title_en;
+    return currentLanguage === 'zh' ? (post.title_en || post.title) : post.title;
   };
   
   const getPostContent = (post: BlogPostType) => {
-    return currentLanguage === 'zh' ? post.content_zh : post.content_en;
+    return currentLanguage === 'zh' ? (post.content_en || post.content) : post.content;
   };
   
   const getPostExcerpt = (post: BlogPostType) => {
-    return currentLanguage === 'zh' ? post.excerpt_zh : post.excerpt_en;
+    return currentLanguage === 'zh' ? (post.summary_en || post.summary) : post.summary;
   };
   
   const getAuthorBio = (author: any) => {
-    return currentLanguage === 'zh' ? author.bio_zh : author.bio_en;
+    return currentLanguage === 'zh' ? (author.bio_en || author.bio) : author.bio;
   };
   
   if (loading) {
@@ -138,7 +137,7 @@ export default function BlogPost() {
                 </div>
                 <div className="flex items-center text-sm text-gray-500">
                   <Calendar className="h-4 w-4 mr-1" />
-                  {new Date(post.created_at).toLocaleDateString('zh-CN')}
+                  {new Date(post.created_at || post.createdAt).toLocaleDateString('zh-CN')}
                 </div>
               </div>
               
@@ -147,16 +146,16 @@ export default function BlogPost() {
               </h1>
               
               {/* Author Info */}
-              {post.blog_authors && (
+              {post.author && (
                 <div className="flex items-center mb-6">
                   <img
-                    src={post.blog_authors.avatar_url || 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?prompt=professional%20doctor%20avatar&image_size=square'}
-                    alt={post.blog_authors.name}
+                    src={post.author.avatar || 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?prompt=professional%20doctor%20avatar&image_size=square'}
+                    alt={post.author.name}
                     className="h-12 w-12 rounded-full mr-4"
                   />
                   <div>
-                    <div className="font-medium text-foreground">{post.blog_authors.name}</div>
-                    <div className="text-sm text-gray-500">{getAuthorBio(post.blog_authors)}</div>
+                    <div className="font-medium text-foreground">{post.author.name}</div>
+                    <div className="text-sm text-gray-500">{getAuthorBio(post.author)}</div>
                   </div>
                 </div>
               )}

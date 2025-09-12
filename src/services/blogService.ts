@@ -1,463 +1,344 @@
-import { postgresql, type BlogPost, type BlogAuthor } from '../lib/postgresql'
+// 博客服务 - 基于 https://postapi.kgzivf.com API
 
-// 重新导出类型定义
-export type { BlogPost, BlogAuthor }
+// API配置
+const API_BASE_URL = ''; // 使用相对路径，通过Vite代理
+const API_KEY = 'blog-api-secret-key-2024'; // 用于需要认证的操作
 
-export interface BlogFormData {
-  title_zh: string;
-  title_en: string;
-  content_zh: string;
-  content_en: string;
-  excerpt_zh: string;
-  excerpt_en: string;
+// 博客作者接口定义
+export interface BlogAuthor {
+  id: number | string;
+  name: string;
+  bio_zh?: string;
+  bio_en?: string;
+  avatar_url?: string;
+  avatar?: string;
+  created_at?: string;
+}
+
+// 博客文章接口定义
+export interface BlogPost {
+  id: number | string;
+  title: string;
+  slug: string;
+  content: string;
+  summary: string;
   category: string;
-  author_id: string;
+  tags: string[];
+  status: 'Published' | 'Draft' | 'Archived';
+  type: 'Post';
+  created_at: string;
+  updated_at: string;
+  // 兼容前端组件的额外字段
+  title_zh?: string;
+  title_en?: string;
+  content_zh?: string;
+  content_en?: string;
+  summary_zh?: string;
+  summary_en?: string;
+  excerpt_zh?: string;
+  excerpt_en?: string;
   featured_image?: string;
-  read_time: number;
-  published: boolean;
+  image?: string;
+  read_time?: number;
+  published?: boolean;
+  createdAt?: string;
+  author_id?: string;
+  blog_authors?: {
+    name: string;
+    bio_zh?: string;
+    bio_en?: string;
+    avatar_url?: string;
+  };
+  author?: {
+    name: string;
+    bio_zh?: string;
+    bio_en?: string;
+    avatar_url?: string;
+    avatar?: string;
+  };
 }
 
-// getPublishedPosts函数已被getAllPosts和getPostsByCategory替代
+// API查询参数接口
+export interface PostsQueryParams {
+  page?: number;
+  limit?: number;
+  category?: string;
+  tags?: string;
+  status?: 'Published' | 'Draft' | 'Archived';
+  search?: string;
+}
 
-// 获取所有文章（包括未发布的，用于管理）
-export async function getAllPosts(limit = 20): Promise<BlogPost[]> {
-  try {
-    console.log('📚 获取所有博客文章...');
-    
-    const { data, error } = await postgresql
-      .from('blog_posts')
-      .select(`
-        blog_posts.*,
-        blog_authors.name,
-        blog_authors.bio_zh,
-        blog_authors.bio_en,
-        blog_authors.avatar_url
-      `)
-      .leftJoin('blog_authors', 'blog_posts.author_id = blog_authors.id')
-      .eq('published', true)
-      .order('created_at', { ascending: false })
-      .limit(limit)
-      .execute();
+// HTTP请求工具函数
+const apiRequest = async <T>(
+  endpoint: string,
+  options: RequestInit = {}
+): Promise<T> => {
+  const url = `${API_BASE_URL}${endpoint}`;
+  const headers = {
+    'Content-Type': 'application/json',
+    ...options.headers,
+  };
 
-    if (error) {
-      console.error('Error fetching posts:', error)
-      throw error
-    }
-
-    // 转换数据格式以匹配原有接口
-    const posts = (data || []).map((row: any) => ({
-      id: row.id,
-      title_zh: row.title_zh,
-      title_en: row.title_en,
-      content_zh: row.content_zh,
-      content_en: row.content_en,
-      excerpt_zh: row.excerpt_zh,
-      excerpt_en: row.excerpt_en,
-      slug: row.slug,
-      category: row.category,
-      featured_image: row.featured_image,
-      read_time: row.read_time,
-      published: row.published,
-      created_at: row.created_at,
-      updated_at: row.updated_at,
-      author_id: row.author_id,
-      blog_authors: row.name ? {
-        name: row.name,
-        bio_zh: row.bio_zh,
-        bio_en: row.bio_en,
-        avatar_url: row.avatar_url
-      } : undefined
-    }));
-
-    console.log(`✅ 成功获取 ${posts.length} 篇文章`);
-    return posts;
-  } catch (error) {
-    console.error('Failed to load posts:', error)
-    throw error
+  // 如果是需要认证的请求，添加API Key
+  if (options.method && ['POST', 'PUT', 'DELETE'].includes(options.method)) {
+    headers['X-API-Key'] = API_KEY;
   }
-}
 
-// 获取所有作者
-export async function getAuthors(): Promise<BlogAuthor[]> {
   try {
-    console.log('👥 获取所有作者...');
+    console.log(`🌐 API请求: ${options.method || 'GET'} ${url}`);
     
-    const { data, error } = await postgresql
-      .from('blog_authors')
-      .select('*')
-      .order('created_at', { ascending: false })
-      .execute();
-
-    if (error) {
-      console.error('Error fetching authors:', error)
-      throw error
-    }
-
-    console.log(`✅ 成功获取 ${data?.length || 0} 位作者`);
-    return (data || []) as BlogAuthor[]
-  } catch (error) {
-    console.error('Failed to get authors:', error)
-    throw error
-  }
-}
-
-// 创建新文章
-export async function createPost(postData: BlogFormData): Promise<BlogPost> {
-  try {
-    console.log('📝 创建新文章:', postData.title_zh);
-    
-    // 生成slug
-    const slug = generateSlug(postData.title_zh)
-    
-    // 检查slug是否已存在
-    const existingPost = await getPostBySlug(slug)
-    if (existingPost) {
-      throw new Error(`文章slug "${slug}" 已存在，请修改标题`)
-    }
-
-    const { data, error } = await postgresql.insert('blog_posts', {
-      title_zh: postData.title_zh,
-      title_en: postData.title_en,
-      content_zh: postData.content_zh,
-      content_en: postData.content_en,
-      excerpt_zh: postData.excerpt_zh,
-      excerpt_en: postData.excerpt_en,
-      slug,
-      category: postData.category,
-      featured_image: postData.featured_image,
-      read_time: postData.read_time,
-      published: postData.published,
-      author_id: postData.author_id
+    const response = await fetch(url, {
+      ...options,
+      headers,
+      mode: 'cors',
     });
 
-    if (error) {
-      console.error('Error creating post:', error)
-      throw error
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`HTTP ${response.status}: ${errorText}`);
     }
 
-    console.log('✅ 文章创建成功:', data.title_zh);
-    return data as BlogPost
+    const data = await response.json();
+    console.log(`✅ API响应成功:`, data);
+    return data;
   } catch (error) {
-    console.error('Failed to create post:', error)
-    throw error
+    console.error(`❌ API请求失败 ${url}:`, error);
+    throw error;
   }
-}
+};
 
-// 更新文章
-export async function updatePost(id: string, postData: Partial<BlogFormData>): Promise<BlogPost> {
-  try {
-    console.log('📝 更新文章:', id);
-    
-    const { data, error } = await postgresql.update('blog_posts', postData, 'id = $1', [id]);
-
-    if (error) {
-      console.error('Error updating post:', error)
-      throw error
+// 数据转换函数：将API数据转换为前端兼容格式
+const transformPost = (apiPost: any): BlogPost => {
+  return {
+    ...apiPost,
+    // 兼容字段映射
+    title_zh: apiPost.title_zh || apiPost.title,
+    title_en: apiPost.title_en || apiPost.title,
+    content_zh: apiPost.content_zh || apiPost.content,
+    content_en: apiPost.content_en || apiPost.content,
+    summary_zh: apiPost.summary_zh || apiPost.summary,
+    summary_en: apiPost.summary_en || apiPost.summary,
+    excerpt_zh: apiPost.excerpt_zh || apiPost.summary,
+    excerpt_en: apiPost.excerpt_en || apiPost.summary,
+    featured_image: apiPost.featured_image,
+    image: apiPost.image || apiPost.featured_image || '',
+    read_time: apiPost.read_time || 5,
+    published: apiPost.status === 'Published',
+    createdAt: apiPost.created_at,
+    // 如果API没有返回作者信息，提供默认值
+    author: apiPost.author ? {
+      ...apiPost.author,
+      avatar: apiPost.author.avatar_url || apiPost.author.avatar
+    } : {
+      name: '系统管理员',
+      bio_zh: '网站管理员',
+      bio_en: 'Site Administrator',
+      avatar_url: '',
+      avatar: ''
     }
+  };
+};
 
-    console.log('✅ 文章更新成功:', data.title_zh);
-    return data as BlogPost
+// 获取博客文章列表
+export const getBlogPosts = async (params: PostsQueryParams = {}): Promise<BlogPost[]> => {
+  try {
+    const queryParams = new URLSearchParams();
+    
+    // 设置默认参数
+    queryParams.append('status', params.status || 'Published');
+    queryParams.append('page', (params.page || 1).toString());
+    queryParams.append('limit', (params.limit || 20).toString());
+    
+    // 添加可选参数
+    if (params.category) queryParams.append('category', params.category);
+    if (params.tags) queryParams.append('tags', params.tags);
+    if (params.search) queryParams.append('search', params.search);
+
+    const response = await apiRequest<any>(
+      `/api/posts?${queryParams.toString()}`
+    );
+
+    // 处理API返回的数据结构 {success: true, data: {posts: [...]}}
+    const posts = response.success ? response.data.posts : response.data;
+    return posts.map(transformPost);
   } catch (error) {
-    console.error('Failed to update post:', error)
-    throw error
+    console.error('❌ 获取博客文章列表失败:', error);
+    throw new Error('无法获取博客文章列表，请检查网络连接或稍后重试');
   }
-}
+};
 
-// 删除文章
-export async function deletePost(id: string): Promise<{ success: boolean }> {
+// 根据ID获取单篇博客文章
+export const getBlogPostById = async (id: number): Promise<BlogPost | null> => {
   try {
-    console.log('🗑️ 删除文章:', id);
-    
-    const { error } = await postgresql.delete('blog_posts', 'id = $1', [id]);
-
-    if (error) {
-      console.error('Error deleting post:', error)
-      throw error
-    }
-
-    console.log('✅ 文章删除成功');
-    return { success: true }
+    const response = await apiRequest<any>(`/api/posts/${id}`);
+    const post = response.success ? response.data : response;
+    return transformPost(post);
   } catch (error) {
-    console.error('Failed to delete post:', error)
-    throw error
-  }
-}
-
-// 生成slug的辅助函数
-function generateSlug(title: string): string {
-  return title
-    .toLowerCase()
-    .replace(/[^a-z0-9\u4e00-\u9fff]/g, '-')
-    .replace(/-+/g, '-')
-    .replace(/^-|-$/g, '')
-    .substring(0, 50) // 限制长度
-}
-
-// 生成特色图片URL的辅助函数
-function generateFeaturedImage(category: string): string {
-  const prompts = {
-    medical: 'modern medical facility healthcare professional consultation',
-    success: 'happy family success story celebration joy',
-    guide: 'medical guidance consultation healthcare advice'
-  }
-  const prompt = prompts[category as keyof typeof prompts] || prompts.medical
-  return `https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?prompt=${encodeURIComponent(prompt)}&image_size=landscape_4_3`
-}
-
-// 创建新作者
-export async function createAuthor(authorData: Omit<BlogAuthor, 'id' | 'created_at' | 'updated_at'>): Promise<BlogAuthor> {
-  try {
-    console.log('👤 创建新作者:', authorData.name);
-    
-    const { data, error } = await postgresql.insert('blog_authors', authorData);
-
-    if (error) {
-      console.error('Error creating author:', error)
-      throw error
+    if (error instanceof Error && error.message.includes('404')) {
+      return null;
     }
+    console.error('❌ 获取博客文章详情失败:', error);
+    throw new Error('获取博客文章详情失败');
+  }
+};
 
-    console.log('✅ 作者创建成功:', data.name);
-    return data as BlogAuthor
+// 根据slug获取单篇博客文章
+export const getBlogPost = async (slug: string): Promise<BlogPost | null> => {
+  try {
+    const response = await apiRequest<any>(`/api/posts/slug/${slug}`);
+    const post = response.success ? response.data : response;
+    return transformPost(post);
   } catch (error) {
-    console.error('Failed to create author:', error)
-    throw error
-  }
-}
-
-// 更新作者
-export async function updateAuthor(id: string, authorData: Partial<Omit<BlogAuthor, 'id' | 'created_at' | 'updated_at'>>): Promise<BlogAuthor> {
-  try {
-    console.log('👤 更新作者:', id);
-    
-    const { data, error } = await postgresql.update('blog_authors', authorData, 'id = $1', [id]);
-
-    if (error) {
-      console.error('Error updating author:', error)
-      throw error
+    if (error instanceof Error && error.message.includes('404')) {
+      return null;
     }
+    console.error('❌ 获取博客文章详情失败:', error);
+    throw new Error('无法获取博客文章详情，请检查网络连接或稍后重试');
+  }
+};
 
-    console.log('✅ 作者更新成功:', data.name);
-    return data as BlogAuthor
+// 搜索博客文章
+export const searchBlogPosts = async (query: string, limit?: number): Promise<BlogPost[]> => {
+  return getBlogPosts({ search: query, status: 'Published' });
+};
+
+// 获取博客分类列表
+export const getBlogCategories = async (): Promise<string[]> => {
+  try {
+    const posts = await getBlogPosts({ status: 'Published', limit: 1000 });
+    const categories = [...new Set(posts.map(post => post.category))];
+    return categories.filter(Boolean);
   } catch (error) {
-    console.error('Failed to update author:', error)
-    throw error
+    console.error('❌ 获取博客分类失败:', error);
+    return [];
   }
-}
+};
 
-// 删除作者
-export async function deleteAuthor(id: string): Promise<{ success: boolean }> {
+// 获取博客标签列表
+export const getBlogTags = async (): Promise<string[]> => {
   try {
-    console.log('🗑️ 删除作者:', id);
-    
-    const { error } = await postgresql.delete('blog_authors', 'id = $1', [id]);
-
-    if (error) {
-      console.error('Error deleting author:', error)
-      throw error
-    }
-
-    console.log('✅ 作者删除成功');
-    return { success: true }
+    const posts = await getBlogPosts({ status: 'Published', limit: 1000 });
+    const allTags = posts.flatMap(post => post.tags || []);
+    const uniqueTags = [...new Set(allTags)];
+    return uniqueTags.filter(Boolean);
   } catch (error) {
-    console.error('Failed to delete author:', error)
-    throw error
+    console.error('❌ 获取博客标签失败:', error);
+    return [];
   }
-}
+};
 
-// 根据分类获取文章
-export async function getPostsByCategory(category: string): Promise<BlogPost[]> {
+// 创建博客文章（需要API Key）
+export const createBlogPost = async (postData: Partial<BlogPost>): Promise<BlogPost> => {
   try {
-    console.log('📂 根据分类获取文章:', category);
-    
-    const { data, error } = await postgresql
-      .from('blog_posts')
-      .select(`
-        blog_posts.*,
-        blog_authors.name,
-        blog_authors.bio_zh,
-        blog_authors.bio_en,
-        blog_authors.avatar_url
-      `)
-      .leftJoin('blog_authors', 'blog_posts.author_id = blog_authors.id')
-      .eq('category', category)
-      .eq('published', true)
-      .order('created_at', { ascending: false })
-      .execute();
+    const response = await apiRequest<any>('/api/posts', {
+      method: 'POST',
+      body: JSON.stringify(postData)
+    });
+    const post = response.success ? response.data : response;
+    return transformPost(post);
+  } catch (error) {
+    console.error('❌ 创建博客文章失败:', error);
+    throw new Error('创建博客文章失败，请检查权限或稍后重试');
+  }
+};
 
-    if (error) {
-      console.error('Error fetching posts by category:', error)
-      throw error
-    }
+// 更新博客文章（需要API Key）
+export const updateBlogPost = async (id: number | string, data: Partial<BlogPost>): Promise<BlogPost> => {
+  try {
+    const response = await apiRequest<any>(`/api/posts/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(data)
+      });
+    const post = response.success ? response.data : response;
+    return transformPost(post);
+  } catch (error) {
+    console.error('❌ 更新博客文章失败:', error);
+    throw new Error('更新博客文章失败，请检查权限或稍后重试');
+  }
+};
 
-    // 转换数据格式
-    const posts = (data || []).map((row: any) => ({
-      id: row.id,
-      title_zh: row.title_zh,
-      title_en: row.title_en,
-      content_zh: row.content_zh,
-      content_en: row.content_en,
-      excerpt_zh: row.excerpt_zh,
-      excerpt_en: row.excerpt_en,
-      slug: row.slug,
-      category: row.category,
-      featured_image: row.featured_image,
-      read_time: row.read_time,
-      published: row.published,
-      created_at: row.created_at,
-      updated_at: row.updated_at,
-      author_id: row.author_id,
-      blog_authors: row.name ? {
-        name: row.name,
-        bio_zh: row.bio_zh,
-        bio_en: row.bio_en,
-        avatar_url: row.avatar_url
-      } : undefined
+// 删除博客文章（需要API Key）
+export const deleteBlogPost = async (id: number | string): Promise<boolean> => {
+  try {
+    await apiRequest<any>(`/api/posts/${id}`, {
+      method: 'DELETE'
+    });
+    return true;
+  } catch (error) {
+    console.error('❌ 删除博客文章失败:', error);
+    throw new Error('删除博客文章失败，请检查权限或稍后重试');
+  }
+};
+
+// 检查API健康状态
+export const checkApiHealth = async (): Promise<boolean> => {
+  try {
+    await apiRequest<any>('/health');
+    return true;
+  } catch (error) {
+    console.error('❌ API健康检查失败:', error);
+    return false;
+  }
+};
+
+// 作者管理函数（兼容性）
+export const getAuthors = async (): Promise<BlogAuthor[]> => {
+  try {
+    const response = await apiRequest<any[]>('/api/authors');
+    return response.map((author, index) => ({
+      id: author.id || index + 1,
+      name: author.name || 'Unknown Author',
+      bio_zh: author.bio_zh || '',
+      bio_en: author.bio_en || '',
+      avatar_url: author.avatar_url || '',
+      avatar: author.avatar || author.avatar_url || '',
+      created_at: author.created_at || new Date().toISOString()
     }));
-
-    console.log(`✅ 成功获取分类 ${category} 的 ${posts.length} 篇文章`);
-    return posts;
   } catch (error) {
-    console.error('Failed to get posts by category:', error)
-    throw error
+    console.error('❌ 获取作者列表失败:', error);
+    return [];
   }
-}
+};
 
-// 导出blogService对象以保持向后兼容
+export const createAuthor = async (authorData: any) => {
+  // 作者信息通常包含在文章中，这里返回空实现
+  console.warn('⚠️ 作者创建功能需要通过文章管理实现');
+  return null;
+};
+
+export const updateAuthor = async (id: number | string, authorData: any) => {
+  // 作者信息通常包含在文章中，这里返回空实现
+  console.warn('⚠️ 作者更新功能需要通过文章管理实现');
+  return null;
+};
+
+export const deleteAuthor = async (id: number | string) => {
+  // 作者信息通常包含在文章中，这里返回空实现
+  console.warn('⚠️ 作者删除功能需要通过文章管理实现');
+  return false;
+};
+
+// 博客服务对象（兼容现有代码）
 export const blogService = {
-  getAllPosts,
-  getPostBySlug,
-  getPostsByCategory,
-  searchPosts,
-  createPost,
-  updatePost,
-  deletePost,
+  getBlogPosts,
+  getAllPosts: getBlogPosts, // 别名
+  getBlogPost,
+  getBlogPostById,
+  searchBlogPosts,
+  getBlogCategories,
+  getBlogTags,
+  createBlogPost,
+  createPost: createBlogPost, // 别名
+  updateBlogPost,
+  updatePost: updateBlogPost, // 别名
+  deleteBlogPost,
+  deletePost: deleteBlogPost, // 别名
+  checkApiHealth,
   getAuthors,
   createAuthor,
   updateAuthor,
   deleteAuthor
-}
+};
 
-// 根据slug获取单篇文章
-export async function getPostBySlug(slug: string): Promise<BlogPost | null> {
-  try {
-    console.log('🔍 根据slug获取文章:', slug);
-    
-    const { data, error } = await postgresql
-      .from('blog_posts')
-      .select(`
-        blog_posts.*,
-        blog_authors.name,
-        blog_authors.bio_zh,
-        blog_authors.bio_en,
-        blog_authors.avatar_url
-      `)
-      .leftJoin('blog_authors', 'blog_posts.author_id = blog_authors.id')
-      .eq('slug', slug)
-      .eq('published', true)
-      .single();
-
-    if (error) {
-      console.error('Error fetching post by slug:', error)
-      return null
-    }
-
-    if (!data) {
-      console.log('📄 文章不存在:', slug);
-      return null
-    }
-
-    // 转换数据格式
-    const post: BlogPost = {
-      id: data.id,
-      title_zh: data.title_zh,
-      title_en: data.title_en,
-      content_zh: data.content_zh,
-      content_en: data.content_en,
-      excerpt_zh: data.excerpt_zh,
-      excerpt_en: data.excerpt_en,
-      slug: data.slug,
-      category: data.category,
-      featured_image: data.featured_image,
-      read_time: data.read_time,
-      published: data.published,
-      created_at: data.created_at,
-      updated_at: data.updated_at,
-      author_id: data.author_id,
-      blog_authors: data.name ? {
-        name: data.name,
-        bio_zh: data.bio_zh,
-        bio_en: data.bio_en,
-        avatar_url: data.avatar_url
-      } : undefined
-    };
-
-    console.log('✅ 成功获取文章:', post.title_zh);
-    return post;
-  } catch (error) {
-    console.error('Failed to get post by slug:', error)
-    return null
-  }
-}
-
-// 搜索文章
-export async function searchPosts(searchTerm: string, language: 'zh' | 'en' = 'zh'): Promise<BlogPost[]> {
-  try {
-    console.log('🔍 搜索文章:', searchTerm, '语言:', language);
-    
-    const titleColumn = language === 'zh' ? 'title_zh' : 'title_en'
-    const excerptColumn = language === 'zh' ? 'excerpt_zh' : 'excerpt_en'
-    
-    // 使用PostgreSQL的ILIKE进行模糊搜索
-    const searchQuery = `
-      SELECT 
-        blog_posts.*,
-        blog_authors.name,
-        blog_authors.bio_zh,
-        blog_authors.bio_en,
-        blog_authors.avatar_url
-      FROM blog_posts
-      LEFT JOIN blog_authors ON blog_posts.author_id = blog_authors.id
-      WHERE blog_posts.published = true
-        AND (blog_posts.${titleColumn} ILIKE $1 OR blog_posts.${excerptColumn} ILIKE $1)
-      ORDER BY blog_posts.created_at DESC
-    `;
-    
-    const { data, error } = await postgresql.query(searchQuery, [`%${searchTerm}%`]);
-
-    if (error) {
-      console.error('Error searching posts:', error)
-      throw error
-    }
-
-    // 转换数据格式
-    const posts = (data || []).map((row: any) => ({
-      id: row.id,
-      title_zh: row.title_zh,
-      title_en: row.title_en,
-      content_zh: row.content_zh,
-      content_en: row.content_en,
-      excerpt_zh: row.excerpt_zh,
-      excerpt_en: row.excerpt_en,
-      slug: row.slug,
-      category: row.category,
-      featured_image: row.featured_image,
-      read_time: row.read_time,
-      published: row.published,
-      created_at: row.created_at,
-      updated_at: row.updated_at,
-      author_id: row.author_id,
-      blog_authors: row.name ? {
-        name: row.name,
-        bio_zh: row.bio_zh,
-        bio_en: row.bio_en,
-        avatar_url: row.avatar_url
-      } : undefined
-    }));
-
-    console.log(`✅ 搜索到 ${posts.length} 篇文章`);
-    return posts;
-  } catch (error) {
-    console.error('Failed to search posts:', error)
-    throw error
-  }
-}
+// 默认导出
+export default blogService;

@@ -2,8 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Calendar, Clock, Search } from 'lucide-react';
-import { getAllPosts, searchPosts, getPostsByCategory } from '../services/blogService';
-import { BlogPost } from '../lib/postgresql';
+import { getBlogPosts, searchBlogPosts, BlogPost } from '../services/blogService';
 
 // BlogPost interface is now imported from supabase types
 
@@ -48,9 +47,9 @@ export default function Blog() {
       setError(null);
       let data: BlogPost[];
       if (selectedCategory === 'all') {
-        data = await getAllPosts(20);
+        data = await getBlogPosts({ limit: 20 });
       } else {
-        data = await getPostsByCategory(selectedCategory);
+        data = await getBlogPosts({ category: selectedCategory, limit: 20 });
       }
       setPosts(data);
     } catch (err: any) {
@@ -72,7 +71,7 @@ export default function Blog() {
     try {
       setLoading(true);
       setError(null);
-      const data = await searchPosts(searchTerm, currentLanguage);
+      const data = await searchBlogPosts(searchTerm, 20);
       const filteredData = selectedCategory === 'all' ? data : data.filter(post => post.category === selectedCategory);
       setPosts(filteredData);
     } catch (err: any) {
@@ -91,11 +90,11 @@ export default function Blog() {
   };
   
   const getPostTitle = (post: BlogPost) => {
-    return currentLanguage === 'zh' ? post.title_zh : post.title_en;
+    return currentLanguage === 'zh' ? (post.title_en || post.title) : post.title;
   };
   
   const getPostExcerpt = (post: BlogPost) => {
-    return currentLanguage === 'zh' ? post.excerpt_zh : post.excerpt_en;
+    return currentLanguage === 'zh' ? (post.summary_en || post.summary) : post.summary;
   };
 
   const getCategoryName = (categoryId: string) => {
@@ -185,7 +184,7 @@ export default function Blog() {
                 <article key={post.id} className="bg-white rounded-medical shadow-card overflow-hidden hover:shadow-lg transition-shadow duration-200">
                   <Link to={`/blog/${post.slug}`}>
                     <img
-                      src={post.featured_image || 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?prompt=medical%20healthcare%20blog%20article&image_size=landscape_4_3'}
+                      src={post.image || 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?prompt=medical%20healthcare%20blog%20article&image_size=landscape_4_3'}
                       alt={getPostTitle(post)}
                       className="w-full h-48 object-cover hover:scale-105 transition-transform duration-200"
                     />
@@ -197,9 +196,9 @@ export default function Blog() {
                         {getCategoryName(post.category)}
                       </span>
                       <div className="flex items-center text-sm text-gray-500">
-                        <Clock className="h-4 w-4 mr-1" />
-                        {post.read_time} {t('blog.minutes')}
-                      </div>
+                          <Clock className="h-4 w-4 mr-1" />
+                          {post.read_time || '5'} {t('blog.minutes')}
+                        </div>
                     </div>
                     
                     <h2 className="text-xl font-semibold text-foreground mb-3 hover:text-primary transition-colors duration-200">
@@ -215,7 +214,7 @@ export default function Blog() {
                     <div className="flex items-center justify-between">
                       <div className="flex items-center text-sm text-gray-500">
                         <Calendar className="h-4 w-4 mr-1" />
-                        {new Date(post.created_at).toLocaleDateString('zh-CN')}
+                        {new Date(post.created_at || post.createdAt).toLocaleDateString('zh-CN')}
                       </div>
                       
                       <Link

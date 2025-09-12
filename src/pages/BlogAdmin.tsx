@@ -721,7 +721,7 @@ const BlogAdmin: React.FC = () => {
                           <Edit className="w-4 h-4" />
                         </button>
                         <button
-                          onClick={() => handleDelete('post', post.id, i18n.language === 'zh' ? post.title_zh : post.title_en)}
+                          onClick={() => handleDelete('post', String(post.id), i18n.language === 'zh' ? post.title_zh : post.title_en)}
                           className="p-2 text-red-600 hover:text-red-900 hover:bg-red-50 rounded-md transition-colors duration-200"
                           title="删除文章"
                         >
@@ -812,7 +812,7 @@ const BlogAdmin: React.FC = () => {
                           <Edit className="w-4 h-4" />
                         </button>
                         <button
-                          onClick={() => handleDelete('author', author.id, author.name)}
+                          onClick={() => handleDelete('author', String(author.id), author.name)}
                           className="text-red-600 hover:text-red-900"
                         >
                           <Trash2 className="w-4 h-4" />
