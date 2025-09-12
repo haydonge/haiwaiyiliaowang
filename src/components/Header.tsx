@@ -9,8 +9,8 @@ const navigation = [
   { name: 'nav.services', href: '/services' },
   { name: 'nav.pricing', href: '/pricing' },
   { name: 'nav.process', href: '/process' },
-  { name: 'nav.contact', href: '/contact' },
   { name: 'nav.blog', href: '/blog' },
+  { name: 'nav.contact', href: '/contact' },
 ];
 
 export default function Header() {

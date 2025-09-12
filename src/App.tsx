@@ -10,7 +10,6 @@ import Process from "@/pages/Process";
 import Contact from "@/pages/Contact";
 import Blog from "@/pages/Blog";
 import BlogPost from "@/pages/BlogPost";
-import BlogAdmin from "@/pages/BlogAdmin";
 
 
 // 布局组件
@@ -35,8 +34,7 @@ export default function App() {
             <Route path="/process" element={<Process />} />
             <Route path="/contact" element={<Contact />} />
             <Route path="/blog" element={<Blog />} />
-            <Route path="/blog/:id" element={<BlogPost />} />
-            <Route path="/admin/blog" element={<BlogAdmin />} />
+            <Route path="/blog/:slug" element={<BlogPost />} />
 
             <Route path="*" element={<div className="text-center text-xl py-20">页面未找到 / Page Not Found</div>} />
           </Routes>

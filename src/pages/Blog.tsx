@@ -1,272 +1,345 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Calendar, Clock, Search } from 'lucide-react';
-import { getBlogPosts, searchBlogPosts, BlogPost } from '../services/blogService';
+import { Search, Calendar, Tag, User, ChevronLeft, ChevronRight } from 'lucide-react';
+import { getBlogPosts, getBlogCategories, getBlogTags, type BlogPost, type PostsQueryParams } from '../services/blogService';
+import Empty from '../components/Empty';
 
-// BlogPost interface is now imported from supabase types
-
-// Posts will be loaded from Supabase
-
-// 分类定义
-const categories = [
-  { id: 'all', name: 'blog.categories.all' },
-  { id: 'health', name: 'blog.categories.health' },
-  { id: 'medical', name: 'blog.categories.medical' },
-  { id: 'research', name: 'blog.categories.research' },
-  { id: 'technology', name: 'blog.categories.technology' }
-];
-
-export default function Blog() {
-  const { t, i18n } = useTranslation();
-  const [selectedCategory, setSelectedCategory] = useState('all');
-  const [searchTerm, setSearchTerm] = useState('');
+const Blog: React.FC = () => {
+  const { t } = useTranslation();
   const [posts, setPosts] = useState<BlogPost[]>([]);
+  const [categories, setCategories] = useState<string[]>([]);
+  const [tags, setTags] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   
-  const currentLanguage = i18n.language as 'zh' | 'en';
+  // 筛选和分页状态
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('');
+  const [selectedTag, setSelectedTag] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [postsPerPage] = useState(6);
 
-  // Load posts from Supabase
-  useEffect(() => {
-    loadPosts();
-  }, [selectedCategory]);
-  
-  // Handle search
-  useEffect(() => {
-    if (searchTerm.trim()) {
-      handleSearch();
-    } else {
-      loadPosts();
-    }
-  }, [searchTerm]);
-  
-  const loadPosts = async () => {
+  // 加载博客数据
+  const loadBlogData = async (params: PostsQueryParams = {}) => {
     try {
       setLoading(true);
       setError(null);
-      let data: BlogPost[];
-      if (selectedCategory === 'all') {
-        data = await getBlogPosts({ limit: 20 });
-      } else {
-        data = await getBlogPosts({ category: selectedCategory, limit: 20 });
-      }
-      setPosts(data);
-    } catch (err: any) {
-      console.error('Failed to load posts:', {
-        message: err?.message || 'Unknown error',
-        details: err?.details,
-        hint: err?.hint,
-        code: err?.code,
-        stack: err?.stack,
-        fullError: err
-      });
-      setError(`加载文章失败: ${err?.message || '未知错误'}`);
+      
+      const [postsData, categoriesData, tagsData] = await Promise.all([
+        getBlogPosts(params),
+        getBlogCategories(),
+        getBlogTags()
+      ]);
+      
+      setPosts(postsData);
+      setCategories(categoriesData);
+      setTags(tagsData);
+    } catch (err) {
+      console.error('Failed to load blog data:', err);
+      setError(err instanceof Error ? err.message : '加载博客数据失败');
     } finally {
       setLoading(false);
     }
   };
-  
-  const handleSearch = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      const data = await searchBlogPosts(searchTerm, 20);
-      const filteredData = selectedCategory === 'all' ? data : data.filter(post => post.category === selectedCategory);
-      setPosts(filteredData);
-    } catch (err: any) {
-      console.error('Search failed:', {
-        message: err?.message || 'Unknown error',
-        details: err?.details,
-        hint: err?.hint,
-        code: err?.code,
-        stack: err?.stack,
-        fullError: err
-      });
-      setError(`搜索失败: ${err?.message || '未知错误'}`);
-    } finally {
-      setLoading(false);
-    }
-  };
-  
-  const getPostTitle = (post: BlogPost) => {
-    return currentLanguage === 'zh' ? (post.title_en || post.title) : post.title;
-  };
-  
-  const getPostExcerpt = (post: BlogPost) => {
-    return currentLanguage === 'zh' ? (post.summary_en || post.summary) : post.summary;
+
+  // 初始加载
+  useEffect(() => {
+    loadBlogData();
+  }, []);
+
+  // 处理搜索和筛选
+  const handleFilter = () => {
+    const params: PostsQueryParams = {
+      page: 1,
+      limit: 50, // 获取更多数据用于前端分页
+    };
+    
+    if (searchQuery.trim()) params.search = searchQuery.trim();
+    if (selectedCategory) params.category = selectedCategory;
+    if (selectedTag) params.tags = selectedTag;
+    
+    setCurrentPage(1);
+    loadBlogData(params);
   };
 
-  const getCategoryName = (categoryId: string) => {
-    const category = categories.find(cat => cat.id === categoryId);
-    return category ? t(category.name) : categoryId;
+  // 重置筛选
+  const handleReset = () => {
+    setSearchQuery('');
+    setSelectedCategory('');
+    setSelectedTag('');
+    setCurrentPage(1);
+    loadBlogData();
   };
 
-  return (
-    <div className="bg-white">
-      {/* Hero Section */}
-      <div className="relative bg-gradient-to-br from-primary-50 to-primary-100 py-16 sm:py-24">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+  // 分页逻辑
+  const indexOfLastPost = currentPage * postsPerPage;
+  const indexOfFirstPost = indexOfLastPost - postsPerPage;
+  const currentPosts = posts.slice(indexOfFirstPost, indexOfLastPost);
+  const totalPages = Math.ceil(posts.length / postsPerPage);
+
+  // 格式化日期
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('zh-CN', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+  };
+
+  // 计算阅读时间
+  const calculateReadTime = (content: string | undefined) => {
+    if (!content) return 1; // 默认1分钟
+    const wordsPerMinute = 200;
+    const wordCount = content.length;
+    return Math.ceil(wordCount / wordsPerMinute) || 1;
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-12">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center">
-            <h1 className="text-4xl font-bold tracking-tight text-foreground sm:text-5xl md:text-6xl">
-              {t('blog.title')}
-            </h1>
-            <p className="mx-auto mt-6 max-w-2xl text-lg text-gray-600">
-              {t('blog.subtitle')}
-            </p>
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto"></div>
+            <p className="mt-4 text-gray-600">加载博客文章中...</p>
           </div>
         </div>
       </div>
+    );
+  }
 
-      {/* Search and Filter */}
-      <div className="py-8 bg-muted">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
-            {/* Search */}
-            <div className="relative flex-1 max-w-md">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <Search className="h-5 w-5 text-gray-400" />
-              </div>
-              <input
-                type="text"
-                placeholder="搜索文章..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-medical leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-primary focus:border-primary"
-              />
-            </div>
-            
-            {/* Categories */}
-            <div className="flex flex-wrap gap-2">
-              {categories.map((category) => (
-                <button
-                  key={category.id}
-                  onClick={() => setSelectedCategory(category.id)}
-                  className={`px-4 py-2 rounded-medical text-sm font-medium transition-colors duration-200 ${
-                    selectedCategory === category.id
-                      ? 'bg-primary text-white'
-                      : 'bg-white text-gray-700 hover:bg-primary-50 hover:text-primary'
-                  }`}
-                >
-                  {t(category.name)}
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Blog Posts */}
-      <div className="py-16 sm:py-24">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          {loading ? (
-            <div className="text-center py-12">
-              <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-              <p className="mt-4 text-gray-500">加载中...</p>
-            </div>
-          ) : error ? (
-            <div className="text-center py-12">
-              <p className="text-red-500 text-lg">{error}</p>
-              <button 
-                onClick={loadPosts}
-                className="mt-4 px-4 py-2 bg-primary text-white rounded-medical hover:bg-primary-600 transition-colors"
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-12">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center">
+            <div className="bg-red-50 border border-red-200 rounded-lg p-6">
+              <h3 className="text-lg font-medium text-red-800 mb-2">加载失败</h3>
+              <p className="text-red-600 mb-4">{error}</p>
+              <button
+                onClick={() => loadBlogData()}
+                className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors"
               >
                 重试
               </button>
             </div>
-          ) : posts.length === 0 ? (
-            <div className="text-center py-12">
-              <p className="text-gray-500 text-lg">没有找到相关文章</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-12">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        {/* 页面标题 */}
+        <div className="text-center mb-12">
+          <h1 className="text-4xl font-bold text-gray-900 mb-4">
+            博客文章
+          </h1>
+          <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+            分享知识、经验和见解
+          </p>
+        </div>
+
+        {/* 搜索和筛选 */}
+        <div className="bg-white rounded-xl shadow-lg p-6 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            {/* 搜索框 */}
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
+              <input
+                type="text"
+                placeholder="搜索文章..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyPress={(e) => e.key === 'Enter' && handleFilter()}
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              />
             </div>
-          ) : (
-            <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
-              {posts.map((post) => (
-                <article key={post.id} className="bg-white rounded-medical shadow-card overflow-hidden hover:shadow-lg transition-shadow duration-200">
-                  <Link to={`/blog/${post.slug}`}>
-                    <img
-                      src={post.image || 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?prompt=medical%20healthcare%20blog%20article&image_size=landscape_4_3'}
-                      alt={getPostTitle(post)}
-                      className="w-full h-48 object-cover hover:scale-105 transition-transform duration-200"
-                    />
-                  </Link>
-                  
-                  <div className="p-6">
-                    <div className="flex items-center justify-between mb-3">
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary-100 text-primary">
-                        {getCategoryName(post.category)}
-                      </span>
-                      <div className="flex items-center text-sm text-gray-500">
-                          <Clock className="h-4 w-4 mr-1" />
-                          {post.read_time || '5'} {t('blog.minutes')}
-                        </div>
+
+            {/* 分类筛选 */}
+            <select
+              value={selectedCategory}
+              onChange={(e) => setSelectedCategory(e.target.value)}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+            >
+              <option value="">所有分类</option>
+              {categories.map((category) => (
+                <option key={category} value={category}>
+                  {category}
+                </option>
+              ))}
+            </select>
+
+            {/* 标签筛选 */}
+            <select
+              value={selectedTag}
+              onChange={(e) => setSelectedTag(e.target.value)}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+            >
+              <option value="">所有标签</option>
+              {tags.map((tag) => (
+                <option key={tag} value={tag}>
+                  {tag}
+                </option>
+              ))}
+            </select>
+
+            {/* 操作按钮 */}
+            <div className="flex gap-2">
+              <button
+                onClick={handleFilter}
+                className="flex-1 bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors"
+              >
+                筛选
+              </button>
+              <button
+                onClick={handleReset}
+                className="flex-1 bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition-colors"
+              >
+                重置
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* 文章列表 */}
+        {currentPosts.length === 0 ? (
+          <Empty 
+            title="暂无文章"
+            description="当前筛选条件下没有找到文章，请尝试调整筛选条件。"
+          />
+        ) : (
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-12">
+              {currentPosts.map((post) => (
+                <article
+                  key={post.id}
+                  className="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow duration-300"
+                >
+                  {/* 文章图片 */}
+                  {post.featured_image && (
+                    <div className="aspect-w-16 aspect-h-9">
+                      <img
+                        src={post.featured_image}
+                        alt={post.title}
+                        className="w-full h-48 object-cover"
+                      />
                     </div>
-                    
-                    <h2 className="text-xl font-semibold text-foreground mb-3 hover:text-primary transition-colors duration-200">
-                      <Link to={`/blog/${post.slug}`}>
-                        {getPostTitle(post)}
-                      </Link>
-                    </h2>
-                    
-                    <p className="text-gray-600 mb-4 line-clamp-3">
-                      {getPostExcerpt(post)}
-                    </p>
-                    
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center text-sm text-gray-500">
-                        <Calendar className="h-4 w-4 mr-1" />
-                        {new Date(post.created_at || post.createdAt).toLocaleDateString('zh-CN')}
-                      </div>
-                      
+                  )}
+
+                  <div className="p-6">
+                    {/* 分类和标签 */}
+                    <div className="flex items-center gap-2 mb-3">
+                      {post.category && (
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">
+                          <Tag className="w-3 h-3 mr-1" />
+                          {post.category}
+                        </span>
+                      )}
+                    </div>
+
+                    {/* 文章标题 */}
+                    <h2 className="text-xl font-bold text-gray-900 mb-3 line-clamp-2">
                       <Link
                         to={`/blog/${post.slug}`}
-                        className="text-primary hover:text-primary-600 font-medium text-sm transition-colors duration-200"
+                        className="hover:text-indigo-600 transition-colors"
                       >
-                        {t('common.readMore')} →
+                        {post.title}
                       </Link>
+                    </h2>
+
+                    {/* 文章摘要 */}
+                    <p className="text-gray-600 mb-4 line-clamp-3">
+                      {post.summary}
+                    </p>
+
+                    {/* 文章元信息 */}
+                    <div className="flex items-center justify-between text-sm text-gray-500">
+                      <div className="flex items-center gap-4">
+                        <span className="flex items-center gap-1">
+                          <Calendar className="w-4 h-4" />
+                          {formatDate(post.created_at)}
+                        </span>
+                        {post.author && (
+                          <span className="flex items-center gap-1">
+                            <User className="w-4 h-4" />
+                            {post.author.name}
+                          </span>
+                        )}
+                      </div>
+                      <span className="text-indigo-600">
+                        {post.read_time || calculateReadTime(post.summary || post.content)} 分钟阅读
+                      </span>
                     </div>
-                    
-                    {/* Author */}
-                    {post.blog_authors && (
-                      <div className="mt-4 flex items-center">
-                        <img
-                          src={post.blog_authors.avatar_url || 'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?prompt=professional%20doctor%20avatar&image_size=square'}
-                          alt={post.blog_authors.name}
-                          className="w-8 h-8 rounded-full mr-2"
-                        />
-                        <span className="text-sm text-gray-600">{post.blog_authors.name}</span>
+
+                    {/* 标签列表 */}
+                    {post.tags && post.tags.length > 0 && (
+                      <div className="flex flex-wrap gap-1 mt-3">
+                        {post.tags.slice(0, 3).map((tag) => (
+                          <span
+                            key={tag}
+                            className="inline-block px-2 py-1 text-xs bg-gray-100 text-gray-600 rounded"
+                          >
+                            #{tag}
+                          </span>
+                        ))}
+                        {post.tags.length > 3 && (
+                          <span className="inline-block px-2 py-1 text-xs bg-gray-100 text-gray-600 rounded">
+                            +{post.tags.length - 3}
+                          </span>
+                        )}
                       </div>
                     )}
                   </div>
                 </article>
               ))}
             </div>
-          )}
-        </div>
-      </div>
 
-      {/* Newsletter Signup */}
-      <div className="bg-primary py-16">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="text-center">
-            <h2 className="text-3xl font-bold text-white sm:text-4xl">
-              订阅我们的医疗资讯
-            </h2>
-            <p className="mt-4 text-lg text-primary-100">
-              获取最新的医疗知识和行业动态
-            </p>
-            <div className="mt-8 flex flex-col sm:flex-row gap-4 justify-center max-w-md mx-auto">
-              <input
-                type="email"
-                placeholder="输入您的邮箱地址"
-                className="flex-1 px-4 py-3 rounded-medical border-0 focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-primary"
-              />
-              <button className="px-6 py-3 bg-white text-primary rounded-medical font-medium hover:bg-gray-50 transition-colors duration-200">
-                订阅
-              </button>
-            </div>
-          </div>
-        </div>
+            {/* 分页 */}
+            {totalPages > 1 && (
+              <div className="flex justify-center items-center gap-2">
+                <button
+                  onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                  disabled={currentPage === 1}
+                  className="flex items-center gap-1 px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                  上一页
+                </button>
+
+                <div className="flex gap-1">
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                    <button
+                      key={page}
+                      onClick={() => setCurrentPage(page)}
+                      className={`px-3 py-2 text-sm font-medium rounded-lg ${
+                        currentPage === page
+                          ? 'bg-indigo-600 text-white'
+                          : 'text-gray-500 bg-white border border-gray-300 hover:bg-gray-50'
+                      }`}
+                    >
+                      {page}
+                    </button>
+                  ))}
+                </div>
+
+                <button
+                  onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                  disabled={currentPage === totalPages}
+                  className="flex items-center gap-1 px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  下一页
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
+            )}
+          </>
+        )}
       </div>
     </div>
   );
-}
+};
+
+export default Blog;
