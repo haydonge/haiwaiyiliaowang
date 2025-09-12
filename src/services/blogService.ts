@@ -1,8 +1,16 @@
 // 博客服务 - 基于 https://postapi.kgzivf.com API
 
-// API配置
-const API_BASE_URL = ''; // 使用相对路径，通过Vite代理
-const API_KEY = 'blog-api-secret-key-2024'; // 用于需要认证的操作
+import { API_CONFIG, CORS_CONFIG, ENV_INFO } from '../config/api';
+
+// 使用统一的API配置
+const { BASE_URL: API_BASE_URL, API_KEY } = API_CONFIG;
+
+// 根据配置决定是否输出日志
+if (API_CONFIG.ENABLE_LOGGING) {
+  console.log(`🌍 当前环境: ${ENV_INFO.isDevelopment ? '开发环境' : '生产环境'}`);
+  console.log(`🔗 API基础URL: ${API_BASE_URL || '相对路径(通过代理)'}`);  
+  console.log(`🔧 调试模式: ${API_CONFIG.ENABLE_DEBUG ? '开启' : '关闭'}`);
+}
 
 // 博客作者接口定义
 export interface BlogAuthor {
@@ -75,7 +83,7 @@ const apiRequest = async <T>(
 ): Promise<T> => {
   const url = `${API_BASE_URL}${endpoint}`;
   const headers = {
-    'Content-Type': 'application/json',
+    ...CORS_CONFIG.headers,
     ...options.headers,
   };
 
@@ -85,24 +93,55 @@ const apiRequest = async <T>(
   }
 
   try {
-    console.log(`🌐 API请求: ${options.method || 'GET'} ${url}`);
+    if (API_CONFIG.ENABLE_LOGGING) {
+      console.log(`🌐 API请求: ${options.method || 'GET'} ${url}`);
+    }
     
     const response = await fetch(url, {
       ...options,
       headers,
-      mode: 'cors',
+      mode: CORS_CONFIG.mode,
+      credentials: CORS_CONFIG.credentials,
     });
 
     if (!response.ok) {
       const errorText = await response.text();
+      if (API_CONFIG.ENABLE_LOGGING) {
+        console.error(`❌ HTTP错误 ${response.status}:`, errorText);
+      }
+      
+      // 如果返回的是HTML页面（通常是404或错误页面），提供更友好的错误信息
+      if (errorText.includes('<!doctype') || errorText.includes('<html')) {
+        throw new Error(`API服务不可用 (HTTP ${response.status})，请检查网络连接或联系管理员`);
+      }
+      
       throw new Error(`HTTP ${response.status}: ${errorText}`);
     }
 
+    const contentType = response.headers.get('content-type');
+    if (!contentType || !contentType.includes('application/json')) {
+      const text = await response.text();
+      if (API_CONFIG.ENABLE_LOGGING) {
+        console.error('❌ 响应不是JSON格式:', text.substring(0, 200));
+      }
+      throw new Error('API返回了非JSON格式的响应，可能是服务器错误页面');
+    }
+
     const data = await response.json();
-    console.log(`✅ API响应成功:`, data);
+    if (API_CONFIG.ENABLE_LOGGING) {
+      console.log(`✅ API响应成功:`, data);
+    }
     return data;
   } catch (error) {
-    console.error(`❌ API请求失败 ${url}:`, error);
+    if (API_CONFIG.ENABLE_LOGGING) {
+      console.error(`❌ API请求失败 ${url}:`, error);
+    }
+    
+    // 如果是网络错误或CORS错误，提供更具体的错误信息
+    if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
+      throw new Error('网络连接失败，请检查网络连接或API服务是否可用');
+    }
+    
     throw error;
   }
 };
