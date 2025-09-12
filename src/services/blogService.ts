@@ -2,7 +2,8 @@
 
 // API配置
 const API_BASE_URL = 'https://postapi.kgzivf.com';
-const API_KEY = 'blog-api-secret-key-2024';
+// 从环境变量获取API密钥，如果没有则使用空字符串（公开API不需要密钥）
+const API_KEY = import.meta.env.VITE_API_KEY || '';
 
 // 博客文章接口定义
 export interface BlogPost {
