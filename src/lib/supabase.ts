@@ -216,23 +216,23 @@ class SupabaseQueryBuilder {
 
 // 创建客户端
 function createSupabaseClient() {
-  // Vercel和DOKPLOY生产环境都使用代理（解决HTTPS混合内容问题）
+  // Vercel生产环境使用代理
   if (isVercelProduction) {
     console.log('🔄 使用Supabase代理客户端（Vercel生产环境）');
     return new SupabaseProxy() as any;
   }
   
+  // DOKPLOY环境也使用代理来解决HTTPS混合内容问题
   if (isDokployEnvironment) {
-    console.log('🐳 使用DOKPLOY专用代理客户端（解决HTTPS混合内容问题）');
+    console.log('🐳 使用DOKPLOY代理客户端（解决HTTPS混合内容问题）');
     console.log('📍 原始Supabase URL:', supabaseUrl);
-    console.log('🔄 尝试HTTPS连接以解决混合内容问题');
-    return new DokploySupabaseProxy(supabaseUrl, supabaseAnonKey) as any;
+    console.log('🔄 通过前端代理访问，避免混合内容错误');
+    return new SupabaseProxy() as any;
   }
   
   // 只有本地开发环境使用直接连接
   console.log('🔗 使用Supabase直接连接（本地开发环境）');
   console.log('📍 Supabase URL:', supabaseUrl);
-  
   return createClient(supabaseUrl, supabaseAnonKey);
 }
 

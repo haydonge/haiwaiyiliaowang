@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useState, useEffect } from 'react';
 import { Calendar, Clock, Tag, ArrowLeft, Share2, Heart } from 'lucide-react';
 import { getPostBySlug } from '../services/blogService';
-import { BlogPost as BlogPostType } from '../lib/supabase';
+import { BlogPost as BlogPostType } from '../lib/postgresql';
 
 // BlogPost interface is now imported from supabase types
 

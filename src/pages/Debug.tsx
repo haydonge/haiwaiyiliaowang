@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { supabase } from '../lib/supabase';
+import { postgresql } from '../lib/postgresql';
 
 interface TestResult {
   name: string;
@@ -22,8 +22,9 @@ const Debug: React.FC = () => {
     
     // 检查必需的环境变量
     const requiredVars = {
-      'VITE_SUPABASE_URL': import.meta.env.VITE_SUPABASE_URL,
-      'VITE_SUPABASE_ANON_KEY': import.meta.env.VITE_SUPABASE_ANON_KEY
+      'NODE_ENV': import.meta.env.NODE_ENV,
+      'VITE_DATABASE_URL': import.meta.env.VITE_DATABASE_URL,
+      'VITE_DATABASE_URL_INTERNAL': import.meta.env.VITE_DATABASE_URL_INTERNAL
     };
     
     for (const [key, value] of Object.entries(requiredVars)) {
@@ -69,72 +70,66 @@ const Debug: React.FC = () => {
     try {
       // 测试基本连接
       const startTime = Date.now();
-      const { data: healthCheck, error: healthError } = await supabase
-        .from('blog_posts')
-        .select('count', { count: 'exact', head: true });
+      const result = await postgresql.testConnection();
       
       const endTime = Date.now();
       const latency = endTime - startTime;
       
-      if (healthError) {
+      if (!result.success) {
         tests.push({
-          name: '数据库连接',
+          name: 'PostgreSQL连接',
           status: 'error',
           message: '连接失败',
-          details: healthError.message
+          details: result.error
         });
       } else {
         tests.push({
-          name: '数据库连接',
+          name: 'PostgreSQL连接',
           status: 'success',
           message: `连接成功 (${latency}ms)`,
-          details: `响应时间: ${latency}ms`
+          details: `响应时间: ${latency}ms, 版本: ${result.version}, 连接类型: ${result.connectionType}`
         });
       }
       
       // 测试文章数据
-      const { data: posts, error: postsError } = await supabase
-        .from('blog_posts')
-        .select('id, title_zh, title_en, author_id')
-        .limit(5);
-      
-      if (postsError) {
-        tests.push({
-          name: '文章数据查询',
-          status: 'error',
-          message: '查询失败',
-          details: postsError.message
-        });
-      } else {
-        tests.push({
-          name: '文章数据查询',
-          status: posts && posts.length > 0 ? 'success' : 'warning',
-          message: posts ? `找到 ${posts.length} 篇文章` : '没有找到文章',
-          details: posts && posts.length > 0 ? posts.map(p => p.title_zh || p.title_en).join(', ') : '数据库中可能没有文章数据'
-        });
-      }
-      
-      // 测试作者数据
-      const { data: authors, error: authorsError } = await supabase
-        .from('blog_authors')
-        .select('id, name')
-        .limit(5);
-      
-      if (authorsError) {
-        tests.push({
-          name: '作者数据查询',
-          status: 'error',
-          message: '查询失败',
-          details: authorsError.message
-        });
-      } else {
-        tests.push({
-          name: '作者数据查询',
-          status: authors && authors.length > 0 ? 'success' : 'warning',
-          message: authors ? `找到 ${authors.length} 位作者` : '没有找到作者',
-          details: authors && authors.length > 0 ? authors.map(a => a.name).join(', ') : '数据库中可能没有作者数据'
-        });
-      }
+       const postsResult = await postgresql.query('SELECT id, title_zh, title_en, author_id FROM blog_posts LIMIT 5');
+       
+       if (postsResult.error) {
+         tests.push({
+           name: '文章数据查询',
+           status: 'error',
+           message: '查询失败',
+           details: postsResult.error
+         });
+       } else {
+         const posts = postsResult.data;
+         tests.push({
+           name: '文章数据查询',
+           status: posts && posts.length > 0 ? 'success' : 'warning',
+           message: posts ? `找到 ${posts.length} 篇文章` : '没有找到文章',
+           details: posts && posts.length > 0 ? posts.map((p: any) => p.title_zh || p.title_en).join(', ') : '数据库中可能没有文章数据'
+         });
+       }
+       
+       // 测试作者数据
+       const authorsResult = await postgresql.query('SELECT id, name FROM blog_authors LIMIT 5');
+       
+       if (authorsResult.error) {
+         tests.push({
+           name: '作者数据查询',
+           status: 'error',
+           message: '查询失败',
+           details: authorsResult.error
+         });
+       } else {
+         const authors = authorsResult.data;
+         tests.push({
+           name: '作者数据查询',
+           status: authors && authors.length > 0 ? 'success' : 'warning',
+           message: authors ? `找到 ${authors.length} 位作者` : '没有找到作者',
+           details: authors && authors.length > 0 ? authors.map((a: any) => a.name).join(', ') : '数据库中可能没有作者数据'
+         });
+       }
       
     } catch (error) {
       tests.push({
@@ -238,10 +233,10 @@ const Debug: React.FC = () => {
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
             <h3 className="text-lg font-semibold text-blue-800 mb-3">💡 常见问题解决方案</h3>
             <div className="space-y-2 text-sm text-blue-700">
-              <p><strong>环境变量未配置：</strong> 请在Vercel项目设置中添加 VITE_SUPABASE_URL 和 VITE_SUPABASE_ANON_KEY</p>
-              <p><strong>数据库连接失败：</strong> 检查Supabase服务是否正常运行，URL和密钥是否正确</p>
+              <p><strong>环境变量未配置：</strong> 请在Vercel项目设置中添加 VITE_DATABASE_URL 和 VITE_DATABASE_URL_INTERNAL</p>
+              <p><strong>数据库连接失败：</strong> 检查PostgreSQL服务是否正常运行，URL是否正确</p>
               <p><strong>没有数据：</strong> 可能需要重新添加文章和作者数据到数据库</p>
-              <p><strong>CORS错误：</strong> 检查Supabase项目的CORS设置是否允许Vercel域名访问</p>
+              <p><strong>连接超时：</strong> 检查网络连接和数据库服务器状态</p>
             </div>
           </div>
           

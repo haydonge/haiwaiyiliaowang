@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
-import { getPublishedPosts, getPostBySlug, searchPosts } from '../services/blogService';
-import { BlogPost } from '../lib/supabase';
+import React, { useState, useEffect } from 'react';
+import { getAllPosts, getPostBySlug, searchPosts, getPostsByCategory } from '../services/blogService';
+import { BlogPost } from '../lib/postgresql';
 
 export default function BlogTest() {
   const [posts, setPosts] = useState<BlogPost[]>([]);
@@ -21,7 +21,7 @@ export default function BlogTest() {
       setError(null);
       addLog('开始测试获取文章列表...');
       
-      const data = await getPublishedPosts('all', 10);
+      const data = await getAllPosts(10);
       setPosts(data);
       addLog(`✅ 成功获取 ${data.length} 篇文章`);
       
@@ -92,7 +92,7 @@ export default function BlogTest() {
       const category = 'medical';
       addLog(`开始测试分类筛选: "${category}"`);
       
-      const data = await getPublishedPosts(category, 10);
+      const data = await getPostsByCategory(category);
       addLog(`✅ 分类筛选完成，找到 ${data.length} 篇文章`);
     } catch (err: any) {
       const errorMsg = `❌ 分类筛选失败: ${err.message}`;

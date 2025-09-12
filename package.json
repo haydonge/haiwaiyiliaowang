@@ -12,8 +12,12 @@
     "server:dev": "nodemon",
     "proxy:dev": "node proxy-server.js",
     "dev": "concurrently \"npm run client:dev\" \"npm run server:dev\"",
-    "dev:with-proxy": "concurrently \"npm run client:dev\" \"npm run proxy:dev\""
-  },
+    "dev:with-proxy": "concurrently \"npm run client:dev\" \"npm run proxy:dev\"",
+    "start": "node server.js",
+    "test:dokploy": "node test-dokploy-api.cjs",
+    "test:local": "node test-dokploy-api.cjs http://localhost:3000",
+    "migrate:postgresql": "node run-postgresql-migration.cjs"
+  }
   "dependencies": {
     "@supabase/supabase-js": "^2.57.4",
     "clsx": "^2.1.1",
@@ -24,6 +28,7 @@
     "i18next-browser-languagedetector": "^8.2.0",
     "lucide-react": "^0.511.0",
     "node-fetch": "^2.7.0",
+    "pg": "^8.16.3",
     "quill": "^2.0.3",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",

@@ -1,20 +1,21 @@
-import { useState, useEffect } from 'react';
-import { useTranslation } from 'react-i18next';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Calendar, Clock, Tag, Search } from 'lucide-react';
-import { getPublishedPosts, searchPosts } from '../services/blogService';
-import { BlogPost } from '../lib/supabase';
+import { useTranslation } from 'react-i18next';
+import { Calendar, Clock, Search } from 'lucide-react';
+import { getAllPosts, searchPosts, getPostsByCategory } from '../services/blogService';
+import { BlogPost } from '../lib/postgresql';
 
 // BlogPost interface is now imported from supabase types
 
 // Posts will be loaded from Supabase
 
+// 分类定义
 const categories = [
   { id: 'all', name: 'blog.categories.all' },
+  { id: 'health', name: 'blog.categories.health' },
   { id: 'medical', name: 'blog.categories.medical' },
-  { id: 'success', name: 'blog.categories.success' },
-  { id: 'news', name: 'blog.categories.news' },
-  { id: 'faq', name: 'blog.categories.faq' },
+  { id: 'research', name: 'blog.categories.research' },
+  { id: 'technology', name: 'blog.categories.technology' }
 ];
 
 export default function Blog() {
@@ -45,7 +46,12 @@ export default function Blog() {
     try {
       setLoading(true);
       setError(null);
-      const data = await getPublishedPosts(selectedCategory === 'all' ? undefined : selectedCategory, 20);
+      let data: BlogPost[];
+      if (selectedCategory === 'all') {
+        data = await getAllPosts(20);
+      } else {
+        data = await getPostsByCategory(selectedCategory);
+      }
       setPosts(data);
     } catch (err: any) {
       console.error('Failed to load posts:', {

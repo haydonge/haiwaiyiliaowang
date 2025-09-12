@@ -55,13 +55,31 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
-// API代理路由
+//// API代理路由
 try {
   const supabaseProxy = require('./api/supabase-proxy.js');
   app.use('/api/supabase-proxy', supabaseProxy);
   console.log('✅ Supabase proxy loaded successfully');
 } catch (error) {
   console.error('❌ Failed to load Supabase proxy:', error.message);
+}
+
+// PostgreSQL API路由
+try {
+  const postgresqlProxy = require('./api/postgresql.js');
+  app.use('/api/postgresql', postgresqlProxy);
+  console.log('✅ PostgreSQL proxy loaded successfully');
+} catch (error) {
+  console.error('❌ Failed to load PostgreSQL proxy:', error.message);
+}
+
+// Express API路由（如果存在）
+try {
+  const { default: apiApp } = require('./api/app.js');
+  app.use('/api', apiApp);
+  console.log('✅ Express API routes loaded successfully');
+} catch (error) {
+  console.error('❌ Failed to load Express API routes:', error.message);
 }
 
 // 静态文件服务
