@@ -1,10 +1,11 @@
 // 博客服务 - 直接调用API，不使用代理
 
 // API配置
-// 开发环境使用vite代理，生产环境使用nginx代理（避免CORS和API服务器问题）
-const API_BASE_URL = 'https://postapi.kgzivf.com';
-// 从环境变量获取API密钥，如果没有则使用空字符串（公开API不需要密钥）
+// 从环境变量获取API配置
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://postapi.kgzivf.com';
 const API_KEY = import.meta.env.VITE_API_KEY || '';
+const ENABLE_LOGGING = import.meta.env.VITE_ENABLE_API_LOGGING === 'true';
+const ENABLE_DEBUG = import.meta.env.VITE_ENABLE_DEBUG === 'true';
 
 // 博客文章接口定义
 export interface BlogPost {
@@ -59,12 +60,19 @@ const apiRequest = async <T>(
   };
 
   // 如果是需要认证的请求，添加API Key
-  if (options.method && ['POST', 'PUT', 'DELETE'].includes(options.method)) {
+  if (options.method && ['POST', 'PUT', 'DELETE'].includes(options.method) && API_KEY) {
+    headers['X-API-Key'] = API_KEY;
+  }
+  
+  // 根据API文档，GET请求不需要API Key，但如果提供了API Key，也可以添加
+  if (API_KEY && (!options.method || options.method === 'GET')) {
     headers['X-API-Key'] = API_KEY;
   }
 
   try {
-    console.log(`🌐 API请求: ${options.method || 'GET'} ${url}`);
+    if (ENABLE_LOGGING) {
+      console.log(`🌐 API请求: ${options.method || 'GET'} ${url}`);
+    }
     
     const response = await fetch(url, {
       ...options,
@@ -75,22 +83,30 @@ const apiRequest = async <T>(
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error(`❌ HTTP错误 ${response.status}:`, errorText);
+      if (ENABLE_DEBUG) {
+        console.error(`❌ HTTP错误 ${response.status}:`, errorText);
+      }
       throw new Error(`HTTP ${response.status}: ${errorText}`);
     }
 
     const contentType = response.headers.get('content-type');
     if (!contentType || !contentType.includes('application/json')) {
       const text = await response.text();
-      console.error('❌ 响应不是JSON格式:', text.substring(0, 200));
+      if (ENABLE_DEBUG) {
+        console.error('❌ 响应不是JSON格式:', text.substring(0, 200));
+      }
       throw new Error('API返回了非JSON格式的响应');
     }
 
     const data = await response.json();
-    console.log(`✅ API响应成功:`, data);
+    if (ENABLE_LOGGING) {
+      console.log(`✅ API响应成功:`, data);
+    }
     return data;
   } catch (error) {
-    console.error(`❌ API请求失败 ${url}:`, error);
+    if (ENABLE_DEBUG) {
+      console.error(`❌ API请求失败 ${url}:`, error);
+    }
     
     if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
       throw new Error('网络连接失败，请检查网络连接或API服务是否可用');
