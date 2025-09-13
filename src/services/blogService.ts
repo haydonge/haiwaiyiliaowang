@@ -2,7 +2,8 @@
 
 // API配置
 // 从环境变量获取API配置
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://postapi.kgzivf.com';
+// 在Vercel环境下使用相对路径，通过vercel.json代理转发
+const API_BASE_URL = import.meta.env.PROD ? '' : (import.meta.env.VITE_API_BASE_URL || 'https://postapi.kgzivf.com');
 const API_KEY = import.meta.env.VITE_API_KEY || '';
 const ENABLE_LOGGING = import.meta.env.VITE_ENABLE_API_LOGGING === 'true';
 const ENABLE_DEBUG = import.meta.env.VITE_ENABLE_DEBUG === 'true';

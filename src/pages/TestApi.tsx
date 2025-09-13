@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import NetworkDiagnostic from '../components/NetworkDiagnostic';
 
 interface BlogPost {
   id: number;
@@ -35,7 +36,8 @@ const TestApi: React.FC = () => {
   const [showJson, setShowJson] = useState<boolean>(false);
   
   // API配置 - 与blogService.ts保持一致
-  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://postapi.kgzivf.com';
+  // 在Vercel环境下使用相对路径，通过vercel.json代理转发
+  const API_BASE_URL = import.meta.env.PROD ? '' : (import.meta.env.VITE_API_BASE_URL || 'https://postapi.kgzivf.com');
   const API_KEY = import.meta.env.VITE_API_KEY || '';
   const ENABLE_LOGGING = import.meta.env.VITE_ENABLE_API_LOGGING === 'true';
   const ENABLE_DEBUG = import.meta.env.VITE_ENABLE_DEBUG === 'true';
@@ -205,6 +207,9 @@ const TestApi: React.FC = () => {
             {t('testApi.clearButton', '清空结果')}
           </button>
         </div>
+        
+        {/* 网络诊断工具 */}
+        <NetworkDiagnostic />
         
         {/* 状态显示 */}
         {status !== 'idle' && (
