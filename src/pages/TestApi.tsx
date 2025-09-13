@@ -33,6 +33,12 @@ const TestApi: React.FC = () => {
   const [apiResponse, setApiResponse] = useState<ApiResponse | null>(null);
   const [error, setError] = useState<string>('');
   const [showJson, setShowJson] = useState<boolean>(false);
+  
+  // API配置 - 与blogService.ts保持一致
+  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://postapi.kgzivf.com';
+  const API_KEY = import.meta.env.VITE_API_KEY || '';
+  const ENABLE_LOGGING = import.meta.env.VITE_ENABLE_API_LOGGING === 'true';
+  const ENABLE_DEBUG = import.meta.env.VITE_ENABLE_DEBUG === 'true';
 
   const testApi = async () => {
     setStatus('loading');
@@ -40,38 +46,77 @@ const TestApi: React.FC = () => {
     setApiResponse(null);
     
     const startTime = Date.now();
+    const apiUrl = `${API_BASE_URL}/api/posts`;
     
     try {
-      console.log('🚀 开始API测试...');
-      console.log('📡 请求URL: https://postapi.kgzivf.com/api/posts');
-      console.log('⚙️ 请求配置:', {
-        method: 'GET',
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      });
+      if (ENABLE_LOGGING) {
+        console.log('🚀 开始API测试...');
+        console.log('📡 请求URL:', apiUrl);
+        console.log('🔑 API Key:', API_KEY ? '已配置' : '未配置');
+        console.log('🌍 环境变量:', {
+          VITE_API_BASE_URL: import.meta.env.VITE_API_BASE_URL,
+          VITE_API_KEY: import.meta.env.VITE_API_KEY ? '已设置' : '未设置',
+          VITE_ENABLE_API_LOGGING: import.meta.env.VITE_ENABLE_API_LOGGING,
+          VITE_ENABLE_DEBUG: import.meta.env.VITE_ENABLE_DEBUG
+        });
+      }
       
-      const response = await fetch('https://postapi.kgzivf.com/api/posts', {
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      };
+      
+      // 添加API Key（如果配置了）
+      if (API_KEY) {
+        headers['X-API-Key'] = API_KEY;
+      }
+      
+      if (ENABLE_LOGGING) {
+        console.log('⚙️ 请求配置:', {
+          method: 'GET',
+          credentials: 'include',
+          mode: 'cors',
+          headers
+        });
+      }
+      
+      const response = await fetch(apiUrl, {
         method: 'GET',
         credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json'
-        }
+        mode: 'cors',
+        headers
       });
       
       const endTime = Date.now();
       setResponseTime(endTime - startTime);
       
-      console.log('📊 响应状态:', response.status);
-      console.log('⏱️ 响应时间:', endTime - startTime, 'ms');
+      if (ENABLE_LOGGING) {
+        console.log('📊 响应状态:', response.status);
+        console.log('⏱️ 响应时间:', endTime - startTime, 'ms');
+        console.log('📋 响应头:', Object.fromEntries(response.headers.entries()));
+      }
       
       if (!response.ok) {
-        throw new Error(`HTTP错误: ${response.status}`);
+        const errorText = await response.text();
+        if (ENABLE_DEBUG) {
+          console.error(`❌ HTTP错误 ${response.status}:`, errorText);
+        }
+        throw new Error(`HTTP ${response.status}: ${errorText}`);
+      }
+      
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        const text = await response.text();
+        if (ENABLE_DEBUG) {
+          console.error('❌ 响应不是JSON格式:', text.substring(0, 200));
+        }
+        throw new Error('API返回了非JSON格式的响应');
       }
       
       const data: ApiResponse = await response.json();
-      console.log('✅ API响应成功:', data);
+      if (ENABLE_LOGGING) {
+        console.log('✅ API响应成功:', data);
+      }
       
       setApiResponse(data);
       setStatus('success');
@@ -81,17 +126,24 @@ const TestApi: React.FC = () => {
       setResponseTime(endTime - startTime);
       
       const errorMessage = err instanceof Error ? err.message : '未知错误';
-      console.error('❌ API请求失败:', errorMessage);
+      if (ENABLE_DEBUG) {
+        console.error('❌ API请求失败:', errorMessage);
+      }
       
-      setError(errorMessage);
       setStatus('error');
       
-      // 提供可能的错误原因
+      // 提供详细的错误诊断信息
+      let detailedError = errorMessage;
+      
       if (errorMessage.includes('Failed to fetch')) {
-        setError('网络连接失败，可能的原因：\n1. CORS配置问题\n2. 网络连接中断\n3. API服务器不可用');
-      } else if (errorMessage.includes('HTTP错误')) {
-        setError(`服务器返回错误: ${errorMessage}`);
+        detailedError = `网络连接失败\n\n可能的原因：\n1. CORS配置问题\n2. 网络连接中断\n3. API服务器不可用\n4. 环境变量配置错误\n\n当前配置：\n- API URL: ${apiUrl}\n- API Key: ${API_KEY ? '已配置' : '未配置'}\n- 环境: ${import.meta.env.MODE}`;
+      } else if (errorMessage.includes('HTTP')) {
+        detailedError = `服务器返回错误: ${errorMessage}\n\n请检查：\n1. API服务器状态\n2. 请求参数是否正确\n3. API Key是否有效`;
+      } else if (errorMessage.includes('JSON')) {
+        detailedError = `响应格式错误: ${errorMessage}\n\n可能的原因：\n1. API返回了HTML错误页面\n2. 代理配置问题\n3. 服务器内部错误`;
       }
+      
+      setError(detailedError);
     }
   };
   
@@ -176,7 +228,19 @@ const TestApi: React.FC = () => {
               <div>
                 <span className="text-gray-600">API地址:</span>
                 <span className="ml-2 font-mono text-sm bg-gray-100 px-2 py-1 rounded">
-                  https://postapi.kgzivf.com/api/posts
+                  {API_BASE_URL}/api/posts
+                </span>
+              </div>
+              <div>
+                <span className="text-gray-600">API Key:</span>
+                <span className="ml-2 font-mono text-sm bg-gray-100 px-2 py-1 rounded">
+                  {API_KEY ? '已配置' : '未配置'}
+                </span>
+              </div>
+              <div>
+                <span className="text-gray-600">环境:</span>
+                <span className="ml-2 font-mono text-sm bg-gray-100 px-2 py-1 rounded">
+                  {import.meta.env.MODE}
                 </span>
               </div>
               <div>
