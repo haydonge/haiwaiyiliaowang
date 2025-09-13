@@ -5,7 +5,8 @@
     "pricing": "价格方案",
     "process": "流程说明",
     "contact": "联系我们",
-    "blog": "医疗资讯"
+    "blog": "医疗资讯",
+    "testApi": "API测试"
   },
   "common": {
     "learnMore": "了解更多",
@@ -191,6 +192,19 @@
     "minutes": "分钟",
     "relatedPosts": "相关文章",
     "backToList": "返回列表"
+  },
+  "testApi": {
+    "title": "API连接测试",
+    "description": "测试与博客API的连接状态",
+    "testing": "测试中...",
+    "testButton": "测试API连接",
+    "clearButton": "清空结果",
+    "connectionStatus": "连接状态",
+    "apiResponse": "API响应数据",
+    "hideJson": "隐藏JSON",
+    "showJson": "查看JSON",
+    "articleList": "博客文章列表",
+    "instructions": "使用说明"
   },
   "footer": {
     "company": "海外医疗服务有限公司",

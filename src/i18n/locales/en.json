@@ -5,7 +5,8 @@
     "pricing": "Pricing",
     "process": "Process",
     "contact": "Contact",
-    "blog": "Blog"
+    "blog": "Blog",
+    "testApi": "API Test"
   },
   "common": {
     "learnMore": "Learn More",
@@ -191,6 +192,19 @@
     "minutes": "minutes",
     "relatedPosts": "Related Posts",
     "backToList": "Back to List"
+  },
+  "testApi": {
+    "title": "API Connection Test",
+    "description": "Test the connection status with the blog API",
+    "testing": "Testing...",
+    "testButton": "Test API Connection",
+    "clearButton": "Clear Results",
+    "connectionStatus": "Connection Status",
+    "apiResponse": "API Response Data",
+    "hideJson": "Hide JSON",
+    "showJson": "Show JSON",
+    "articleList": "Blog Articles List",
+    "instructions": "Instructions"
   },
   "footer": {
     "company": "Overseas Medical Services Ltd.",

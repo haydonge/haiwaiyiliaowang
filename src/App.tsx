@@ -10,6 +10,7 @@ import Process from "@/pages/Process";
 import Contact from "@/pages/Contact";
 import Blog from "@/pages/Blog";
 import BlogPost from "@/pages/BlogPost";
+import TestApi from "@/pages/TestApi";
 
 
 // 布局组件
@@ -35,6 +36,7 @@ export default function App() {
             <Route path="/contact" element={<Contact />} />
             <Route path="/blog" element={<Blog />} />
             <Route path="/blog/:slug" element={<BlogPost />} />
+            <Route path="/test-api" element={<TestApi />} />
 
             <Route path="*" element={<div className="text-center text-xl py-20">页面未找到 / Page Not Found</div>} />
           </Routes>
