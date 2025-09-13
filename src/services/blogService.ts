@@ -1,8 +1,8 @@
 // 博客服务 - 直接调用API，不使用代理
 
 // API配置
-// 生产环境使用相对路径通过nginx代理，开发环境使用vite代理
-const API_BASE_URL = import.meta.env.DEV ? '' : '';
+// 开发环境使用vite代理，生产环境使用nginx代理（避免CORS和API服务器问题）
+const API_BASE_URL = 'https://postapi.kgzivf.com';
 // 从环境变量获取API密钥，如果没有则使用空字符串（公开API不需要密钥）
 const API_KEY = import.meta.env.VITE_API_KEY || '';
 
@@ -70,7 +70,7 @@ const apiRequest = async <T>(
       ...options,
       headers,
       mode: 'cors',
-      credentials: 'omit',
+      credentials: 'include',
     });
 
     if (!response.ok) {
